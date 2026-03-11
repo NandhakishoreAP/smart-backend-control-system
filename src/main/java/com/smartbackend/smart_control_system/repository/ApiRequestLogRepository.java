@@ -10,9 +10,31 @@ public interface ApiRequestLogRepository extends JpaRepository<ApiRequestLog, Lo
 
     List<ApiRequestLog> findByApiKey(String apiKey);
 
-    @Query("SELECT a.endpoint, COUNT(a.endpoint) FROM ApiRequestLog a GROUP BY a.endpoint ORDER BY COUNT(a.endpoint) DESC")
+    // Top endpoints
+    @Query("""
+    SELECT a.endpoint, COUNT(a.id)
+    FROM ApiRequestLog a
+    GROUP BY a.endpoint
+    ORDER BY COUNT(a.id) DESC
+    """)
     List<Object[]> findTopEndpoints();
 
-    @Query("SELECT a.endpoint, COUNT(a.id) FROM ApiRequestLog a GROUP BY a.endpoint")
+
+    // Traffic stats
+    @Query("""
+    SELECT a.endpoint, COUNT(a.id)
+    FROM ApiRequestLog a
+    GROUP BY a.endpoint
+    """)
     List<Object[]> getTrafficStats();
+
+
+    // Top API consumers
+    @Query("""
+    SELECT a.apiKey, COUNT(a.id)
+    FROM ApiRequestLog a
+    GROUP BY a.apiKey
+    ORDER BY COUNT(a.id) DESC
+    """)
+    List<Object[]> findTopApiConsumers();
 }

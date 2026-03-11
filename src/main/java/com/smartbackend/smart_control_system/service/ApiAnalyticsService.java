@@ -86,4 +86,23 @@ public class ApiAnalyticsService {
 
     return response;
     }
+
+    public List<Map<String,Object>> getTopApiConsumers(){
+
+    List<Object[]> results = logRepository.findTopApiConsumers();
+
+    List<Map<String,Object>> response = new ArrayList<>();
+
+    for(Object[] row : results){
+
+        Map<String,Object> data = new HashMap<>();
+
+        data.put("apiKey", row[0]);
+        data.put("requests", row[1]);
+
+        response.add(data);
+    }
+
+    return response;
+    }
 }
