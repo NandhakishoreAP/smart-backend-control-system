@@ -40,10 +40,12 @@ public class ApiGatewayFilter extends OncePerRequestFilter {
         // Allow public endpoints
         if (path.startsWith("/api/users") ||
             path.startsWith("/api-keys") ||
-            path.startsWith("/analytics")) {
+            path.startsWith("/analytics") ||
+            path.startsWith("/monitor") ||
+            path.startsWith("/ws")) {
 
-            filterChain.doFilter(request, response);
-            return;
+        filterChain.doFilter(request, response);
+        return;
         }
 
         String apiKeyHeader = request.getHeader("X-API-KEY");

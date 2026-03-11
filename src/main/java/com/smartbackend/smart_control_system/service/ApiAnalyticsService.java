@@ -67,4 +67,23 @@ public class ApiAnalyticsService {
 
         return response;
     }
+
+    public List<Map<String,Object>> getTrafficStats(){
+
+    List<Object[]> results = logRepository.getTrafficStats();
+
+    List<Map<String,Object>> response = new ArrayList<>();
+
+    for(Object[] row : results){
+
+        Map<String,Object> data = new HashMap<>();
+
+        data.put("endpoint", row[0]);
+        data.put("requests", row[1]);
+
+        response.add(data);
+    }
+
+    return response;
+    }
 }

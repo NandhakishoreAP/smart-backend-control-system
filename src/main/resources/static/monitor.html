@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>API Monitoring Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<h2>Live API Monitoring</h2>
+
+<ul id="logs"></ul>
+
+<h2>API Traffic</h2>
+
+<canvas id="trafficChart" width="400" height="200"></canvas>
+
+<script>
+
+var socket = new SockJS('http://localhost:8080/ws');
+var stompClient = Stomp.over(socket);
+
+stompClient.connect({}, function () {
+
+    stompClient.subscribe('/topic/api-monitor', function (message) {
+
+        var log = JSON.parse(message.body);
+
+        var li = document.createElement("li");
+
+        li.innerHTML =
+        log.endpoint + " | " +
+        log.method + " | " +
+        log.status + " | " +
+        log.latency + " ms";
+
+        document.getElementById("logs").appendChild(li);
+    });
+
+});
+
+</script>
+
+
+<script>
+
+fetch("http://localhost:8080/analytics/traffic")
+.then(res => res.json())
+.then(data => {
+
+    const labels = data.map(d => d.endpoint);
+    const values = data.map(d => d.requests);
+
+    new Chart(document.getElementById("trafficChart"), {
+        type: "bar",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Requests",
+                data: values,
+                backgroundColor: "rgba(75,192,192,0.6)"
+            }]
+        }
+    });
+
+});
+
+</script>
+
+</body>
+
+</html>

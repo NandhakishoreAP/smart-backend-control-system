@@ -31,4 +31,9 @@ public class AnalyticsController {
     public List<Map<String,Object>> topEndpoints(){
         return analyticsService.getTopEndpoints();
     }
+
+    @GetMapping("/traffic")
+    public List<Map<String,Object>> getTrafficStats(){
+    return analyticsService.getTrafficStats();
+    }
 }
