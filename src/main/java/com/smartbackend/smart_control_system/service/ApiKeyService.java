@@ -6,6 +6,7 @@ import com.smartbackend.smart_control_system.entity.User;
 import com.smartbackend.smart_control_system.repository.ApiKeyRepository;
 import com.smartbackend.smart_control_system.util.ApiKeyGenerator;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 @Service
 public class ApiKeyService {
@@ -25,13 +26,12 @@ public class ApiKeyService {
         return apiKeyRepository.save(apiKey);
     }
 
-    public ApiKey validateApiKey(String key) {
+    @Cacheable(value = "apiKeys", key = "#key")
+public ApiKey validateApiKey(String key) {
 
-        return apiKeyRepository.findByApiKey(key)
-                .filter(ApiKey::isActive)
-                .orElseThrow(() ->
-                        new RuntimeException("Invalid API Key"));
-    }
+    return apiKeyRepository.findByApiKey(key)
+            .orElseThrow(() -> new RuntimeException("Invalid API Key"));
+}
 
     public ApiKeyResponse convertToResponse(ApiKey key){
 

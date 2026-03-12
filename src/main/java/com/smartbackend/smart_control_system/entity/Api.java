@@ -15,36 +15,113 @@ public class Api {
 
     private String description;
 
+    @Column(unique = true)
+    private String basePath;
+
+    @Column(unique = true)
+    private String slug;
+
+    @Column(name = "upstream_url")
+    private String upstreamUrl;
+
+    private int rateLimit;
+
+    private boolean active;
+
     private LocalDateTime createdAt;
 
     @ManyToOne
-    @JoinColumn(name = "owner_id")
-    private User owner;
+    @JoinColumn(name = "provider_id")
+    private User provider;
 
     public Api() {
         this.createdAt = LocalDateTime.now();
+        this.active = true;
     }
 
-    public Api(String name, String description, User owner) {
+    // ---------- GETTERS & SETTERS ----------
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
         this.name = name;
-        this.description = description;
-        this.owner = owner;
-        this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
+    public String getDescription() {
+        return description;
+    }
 
-    public String getName() { return name; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getDescription() { return description; }
+    public String getBasePath() {
+        return basePath;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setBasePath(String basePath) {
+        this.basePath = basePath;
+    }
 
-    public User getOwner() { return owner; }
+    // -------- SLUG GETTER & SETTER --------
 
-    public void setName(String name) { this.name = name; }
+    public String getSlug() {
+        return slug;
+    }
 
-    public void setDescription(String description) { this.description = description; }
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
 
-    public void setOwner(User owner) { this.owner = owner; }
+    // -------- UPSTREAM URL --------
+
+    public String getUpstreamUrl() {
+        return upstreamUrl;
+    }
+
+    public void setUpstreamUrl(String upstreamUrl) {
+        this.upstreamUrl = upstreamUrl;
+    }
+
+    // -------- RATE LIMIT --------
+
+    public int getRateLimit() {
+        return rateLimit;
+    }
+
+    public void setRateLimit(int rateLimit) {
+        this.rateLimit = rateLimit;
+    }
+
+    // -------- ACTIVE --------
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    // -------- CREATED AT --------
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    // -------- PROVIDER --------
+
+    public User getProvider() {
+        return provider;
+    }
+
+    public void setProvider(User provider) {
+        this.provider = provider;
+    }
 }
