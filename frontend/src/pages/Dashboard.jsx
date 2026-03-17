@@ -1,25 +1,50 @@
-import { useState } from 'react'
-import apiClient from '../services/apiClient'
-
-const kpis = [
-  { label: 'Requests (24h)', value: '1.6M', delta: '+12%' },
-  { label: 'Error Rate', value: '0.42%', delta: '-0.08%' },
-  { label: 'Avg Latency', value: '214ms', delta: '-18ms' },
-  { label: 'Active APIs', value: '86', delta: '+4' },
-]
+import { useEffect, useMemo, useState } from 'react'
+import api, { getDashboardAnalytics } from '../api/api'
 
 function Dashboard() {
+  const [analytics, setAnalytics] = useState(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(true)
+  const [analyticsError, setAnalyticsError] = useState('')
   const [gatewayResponse, setGatewayResponse] = useState(null)
   const [gatewayError, setGatewayError] = useState('')
   const [gatewayLoading, setGatewayLoading] = useState(false)
   const [gatewayStatus, setGatewayStatus] = useState(null)
   const [showCopied, setShowCopied] = useState(false)
 
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchAnalytics = async () => {
+      try {
+        setAnalyticsLoading(true)
+        const data = await getDashboardAnalytics()
+        if (isMounted) {
+          setAnalytics(data)
+          setAnalyticsError('')
+        }
+      } catch (err) {
+        if (isMounted) {
+          setAnalyticsError(err?.message || 'Failed to load analytics.')
+        }
+      } finally {
+        if (isMounted) {
+          setAnalyticsLoading(false)
+        }
+      }
+    }
+
+    fetchAnalytics()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const handleTestGateway = async () => {
     try {
       setGatewayLoading(true)
       setGatewayError('')
-      const response = await apiClient.get('/gateway/weather/posts')
+      const response = await api.get('/gateway/weather/posts')
       setGatewayResponse(response.data)
       setGatewayStatus(response.status)
     } catch (err) {
@@ -30,6 +55,35 @@ function Dashboard() {
       setGatewayLoading(false)
     }
   }
+
+  const kpis = useMemo(() => {
+    if (!analytics) {
+      return []
+    }
+
+    return [
+      {
+        label: 'Requests (24h)',
+        value: analytics.requests24h?.toLocaleString() || '0',
+        delta: '—',
+      },
+      {
+        label: 'Error Rate',
+        value: `${analytics.errorRate?.toFixed(2) || '0.00'}%`,
+        delta: '—',
+      },
+      {
+        label: 'Avg Latency',
+        value: `${analytics.avgLatency ?? 0}ms`,
+        delta: '—',
+      },
+      {
+        label: 'Active APIs',
+        value: analytics.activeApis?.toString() || '0',
+        delta: '—',
+      },
+    ]
+  }, [analytics])
 
   const handleCopyResponse = async () => {
     if (!gatewayResponse) {
@@ -47,18 +101,34 @@ function Dashboard() {
   return (
     <div className="space-y-10">
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((kpi) => (
-          <div
-            key={kpi.label}
-            className="min-h-[140px] rounded-xl bg-white p-6 shadow-sm flex flex-col justify-between"
-          >
-            <p className="text-xs uppercase tracking-[0.2em] text-ink-600">{kpi.label}</p>
-            <div className="mt-3 flex items-end justify-between">
-              <p className="text-2xl font-semibold text-ink-900">{kpi.value}</p>
-              <span className="text-sm font-semibold text-mint-600">{kpi.delta}</span>
+        {analyticsLoading &&
+          Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={`skeleton-${index}`}
+              className="min-h-[140px] rounded-xl bg-white p-6 shadow-sm animate-pulse"
+            >
+              <div className="h-3 w-24 rounded-full bg-fog-100" />
+              <div className="mt-6 h-7 w-20 rounded-full bg-fog-100" />
             </div>
+          ))}
+        {!analyticsLoading && analyticsError && (
+          <div className="col-span-full rounded-xl border border-signal-400/40 bg-signal-400/10 p-4 text-sm text-ink-800">
+            {analyticsError}
           </div>
-        ))}
+        )}
+        {!analyticsLoading && !analyticsError &&
+          kpis.map((kpi) => (
+            <div
+              key={kpi.label}
+              className="min-h-[140px] rounded-xl bg-white p-6 shadow-sm flex flex-col justify-between"
+            >
+              <p className="text-xs uppercase tracking-[0.2em] text-ink-600">{kpi.label}</p>
+              <div className="mt-3 flex items-end justify-between">
+                <p className="text-2xl font-semibold text-ink-900">{kpi.value}</p>
+                <span className="text-sm font-semibold text-mint-600">{kpi.delta}</span>
+              </div>
+            </div>
+          ))}
       </section>
 
       <section className="space-y-6">

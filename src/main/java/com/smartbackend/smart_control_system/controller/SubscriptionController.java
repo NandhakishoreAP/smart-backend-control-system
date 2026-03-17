@@ -1,11 +1,12 @@
 package com.smartbackend.smart_control_system.controller;
 
-import com.smartbackend.smart_control_system.entity.ApiSubscription;
+import com.smartbackend.smart_control_system.dto.ApiSubscriptionResponse;
 import com.smartbackend.smart_control_system.service.SubscriptionService;
 
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/subscriptions")
@@ -18,7 +19,7 @@ public class SubscriptionController {
     }
 
     @PostMapping("/subscribe")
-    public ApiSubscription subscribe(
+        public ApiSubscriptionResponse subscribe(
             @RequestParam Long userId,
             @RequestParam Long apiId
     ) {
@@ -27,10 +28,16 @@ public class SubscriptionController {
     }
 
     @GetMapping("/user/{userId}")
-    public List<ApiSubscription> getUserSubscriptions(
+        public List<ApiSubscriptionResponse> getUserSubscriptions(
             @PathVariable Long userId
     ) {
 
         return subscriptionService.getUserSubscriptions(userId);
+    }
+
+    @DeleteMapping("/{subscriptionId}")
+    public Map<String, String> unsubscribe(@PathVariable Long subscriptionId) {
+        subscriptionService.unsubscribe(subscriptionId);
+        return Map.of("message", "Unsubscribed successfully");
     }
 }

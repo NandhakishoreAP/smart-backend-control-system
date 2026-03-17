@@ -8,6 +8,9 @@ import com.smartbackend.smart_control_system.util.ApiKeyGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class ApiKeyService {
 
@@ -43,4 +46,18 @@ public ApiKey validateApiKey(String key) {
         key.getCreatedAt()
     );
 }
+
+    public List<ApiKeyResponse> getAllApiKeys() {
+        return apiKeyRepository.findAll()
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public void deleteApiKey(Long id) {
+        if (!apiKeyRepository.existsById(id)) {
+            throw new RuntimeException("API key not found");
+        }
+        apiKeyRepository.deleteById(id);
+    }
 }

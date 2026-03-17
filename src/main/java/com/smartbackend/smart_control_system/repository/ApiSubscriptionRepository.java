@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ApiSubscriptionRepository extends JpaRepository<ApiSubscription, Long> {
@@ -12,5 +13,7 @@ public interface ApiSubscriptionRepository extends JpaRepository<ApiSubscription
     List<ApiSubscription> findByConsumer_Id(Long consumerId);
 
     boolean existsByConsumer_IdAndApi_Id(Long consumerId, Long apiId);
+
+    Optional<ApiSubscription> findByConsumer_IdAndApi_Id(Long consumerId, Long apiId);
 
 }

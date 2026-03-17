@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-function ApiCard({ name, description, rateLimit, slug }) {
+function ApiCard({ name, description, rateLimit, slug, subscribed }) {
   return (
     <Link
       to={`/apis/${slug}`}
@@ -14,9 +14,16 @@ function ApiCard({ name, description, rateLimit, slug }) {
       </div>
       <p className="mt-3 text-sm text-ink-600">{description}</p>
       <div className="mt-auto pt-6">
-        <span className="inline-flex items-center rounded-lg border border-ink-900/10 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-900 transition group-hover:bg-fog-50">
-          View API
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center rounded-lg border border-ink-900/10 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-900 transition group-hover:bg-fog-50">
+            View API
+          </span>
+          {subscribed && (
+            <span className="rounded-full bg-mint-400/20 px-2 py-1 text-xs font-semibold text-mint-600">
+              Subscribed
+            </span>
+          )}
+        </div>
       </div>
     </Link>
   )

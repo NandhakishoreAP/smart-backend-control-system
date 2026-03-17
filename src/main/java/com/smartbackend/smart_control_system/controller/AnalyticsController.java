@@ -1,5 +1,6 @@
 package com.smartbackend.smart_control_system.controller;
 
+import com.smartbackend.smart_control_system.dto.AnalyticsDashboardResponse;
 import com.smartbackend.smart_control_system.entity.ApiRequestLog;
 import com.smartbackend.smart_control_system.service.ApiAnalyticsService;
 import org.springframework.web.bind.annotation.*;
@@ -40,5 +41,10 @@ public class AnalyticsController {
     @GetMapping("/top-consumers")
     public List<Map<String,Object>> topApiConsumers(){
     return analyticsService.getTopApiConsumers();
+    }
+
+    @GetMapping("/dashboard")
+    public AnalyticsDashboardResponse dashboard() {
+        return analyticsService.getDashboardMetrics();
     }
 }

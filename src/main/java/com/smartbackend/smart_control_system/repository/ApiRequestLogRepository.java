@@ -3,7 +3,9 @@ package com.smartbackend.smart_control_system.repository;
 import com.smartbackend.smart_control_system.entity.ApiRequestLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ApiRequestLogRepository extends JpaRepository<ApiRequestLog, Long> {
@@ -37,4 +39,25 @@ public interface ApiRequestLogRepository extends JpaRepository<ApiRequestLog, Lo
     ORDER BY COUNT(a.id) DESC
     """)
     List<Object[]> findTopApiConsumers();
+
+    @Query("""
+    SELECT COUNT(a)
+    FROM ApiRequestLog a
+    WHERE a.timestamp >= :since
+    """)
+    long countSince(@Param("since") LocalDateTime since);
+
+    @Query("""
+    SELECT COUNT(a)
+    FROM ApiRequestLog a
+    WHERE a.timestamp >= :since AND a.status >= 400
+    """)
+    long countErrorSince(@Param("since") LocalDateTime since);
+
+    @Query("""
+    SELECT COALESCE(AVG(a.latency), 0)
+    FROM ApiRequestLog a
+    WHERE a.timestamp >= :since
+    """)
+    double averageLatencySince(@Param("since") LocalDateTime since);
 }

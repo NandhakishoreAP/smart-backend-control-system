@@ -1,28 +1,37 @@
-import { useState } from 'react'
-import { createApiKey, getApiKeys, revokeApiKey } from '../services/apiClient'
+import { useEffect, useState } from 'react'
+import ApiKeyCard from '../components/ApiKeyCard'
+import { createApiKey, deleteApiKey, getApiKeys } from '../api/api'
 
 function ApiKeys() {
-  const [userId, setUserId] = useState('')
   const [keys, setKeys] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [revokingId, setRevokingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
+  const [toast, setToast] = useState('')
 
   const formatDate = (value) => {
     const date = new Date(value)
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
   }
 
-  const handleLoadKeys = async () => {
-    if (!userId.trim()) {
-      setError('User ID is required to fetch keys.')
-      return
+  const maskKey = (value) => {
+    if (!value) {
+      return ''
     }
+    const last4 = value.slice(-4)
+    return `****${last4}`
+  }
 
+  const showToast = (message) => {
+    setToast(message)
+    window.setTimeout(() => setToast(''), 1800)
+  }
+
+  const fetchKeys = async () => {
     try {
       setLoading(true)
-      const data = await getApiKeys(userId.trim())
+      const data = await getApiKeys()
       setKeys(data)
       setError('')
     } catch (err) {
@@ -32,16 +41,21 @@ function ApiKeys() {
     }
   }
 
-  const handleCreateKey = async () => {
-    if (!userId.trim()) {
-      setError('User ID is required to create a key.')
-      return
-    }
+  useEffect(() => {
+    fetchKeys()
+  }, [])
 
+  const handleCreateKey = async () => {
     try {
+      const userId = localStorage.getItem('userId')
+      if (!userId) {
+        setError('Missing userId. Set localStorage userId to create a key.')
+        return
+      }
       setCreating(true)
-      const newKey = await createApiKey(userId.trim())
+      const newKey = await createApiKey(userId)
       setKeys((prev) => [newKey, ...prev])
+      showToast('API Key created')
       setError('')
     } catch (err) {
       setError(err?.message || 'Failed to create API key.')
@@ -50,91 +64,91 @@ function ApiKeys() {
     }
   }
 
-  const handleRevokeKey = async (id) => {
+  const handleDeleteKey = async (id) => {
+    const confirmed = window.confirm('Delete this API key? This action cannot be undone.')
+    if (!confirmed) {
+      return
+    }
     try {
-      setRevokingId(id)
-      await revokeApiKey(id)
+      setDeletingId(id)
+      await deleteApiKey(id)
       setKeys((prev) => prev.filter((item) => item.id !== id))
+      showToast('API Key deleted')
     } catch (err) {
-      setError(err?.message || 'Failed to revoke API key.')
+      setError(err?.message || 'Failed to delete API key.')
     } finally {
-      setRevokingId(null)
+      setDeletingId(null)
+    }
+  }
+
+  const handleCopyKey = async (value) => {
+    if (!value) {
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(value)
+      showToast('API Key copied')
+    } catch (err) {
+      setError('Failed to copy API key.')
     }
   }
 
   return (
     <section className="space-y-6">
       <div className="rounded-3xl border border-fog-100 bg-white/80 p-6 shadow-glass backdrop-blur">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl font-semibold">Active Keys</h2>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleLoadKeys}
-              className="rounded-lg border border-fog-100 bg-white px-4 py-2 text-sm font-semibold text-ink-800 transition hover:bg-fog-50"
-            >
-              {loading ? 'Loading...' : 'Load Keys'}
-            </button>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="font-display text-xl font-semibold">API Keys</h2>
+            <p className="mt-2 text-sm text-ink-600">Manage gateway keys for your applications.</p>
+          </div>
+          <div className="flex flex-wrap gap-4">
             <button
               onClick={handleCreateKey}
-              className="rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-fog-50 transition hover:bg-ink-700"
+              className="flex items-center justify-between rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-fog-50 transition hover:bg-ink-700"
             >
               {creating ? 'Creating...' : 'Create Key'}
             </button>
           </div>
         </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-[2fr_1fr]">
-          <label className="text-sm text-ink-700">
-            User ID
-            <input
-              value={userId}
-              onChange={(event) => setUserId(event.target.value)}
-              placeholder="Enter user ID"
-              className="mt-2 w-full rounded-xl border border-fog-100 bg-white px-4 py-2 text-sm text-ink-900 outline-none focus:border-mint-400"
-            />
-          </label>
-          <div className="rounded-2xl border border-fog-100 bg-fog-50 p-4 text-xs text-ink-600">
-            <p className="font-semibold text-ink-800">Tip</p>
-            <p className="mt-2">Use the same user ID you use in your backend user records.</p>
+
+        {toast && (
+          <div className="mt-4 rounded-xl border border-mint-400/40 bg-mint-400/15 px-4 py-3 text-sm font-semibold text-ink-900">
+            {toast}
           </div>
-        </div>
+        )}
+
         {error && (
           <div className="mt-4 rounded-2xl border border-signal-400/40 bg-signal-400/10 px-4 py-3 text-sm text-ink-800">
             {error}
           </div>
         )}
-        <div className="mt-4 overflow-hidden rounded-2xl border border-fog-100">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-fog-50 text-xs uppercase tracking-[0.2em] text-ink-600">
-              <tr>
-                <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">API Key</th>
-                <th className="px-4 py-3">Created</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-fog-100 bg-white">
-              {keys.map((key) => (
-                <tr key={key.id}>
-                  <td className="px-4 py-3 font-medium text-ink-900">{key.id}</td>
-                  <td className="px-4 py-3 text-ink-700">{key.apiKey}</td>
-                  <td className="px-4 py-3 text-ink-700">{formatDate(key.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleRevokeKey(key.id)}
-                      className="rounded-lg border border-ink-900/10 bg-white px-3 py-1 text-xs font-semibold text-ink-900 transition hover:bg-fog-50"
-                      disabled={revokingId === key.id}
-                    >
-                      {revokingId === key.id ? 'Revoking...' : 'Revoke'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+        {loading && (
+          <div className="mt-6 flex items-center gap-4 text-sm text-ink-600">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-ink-900/20 border-t-ink-900" />
+            Loading API keys...
+          </div>
+        )}
+
         {!loading && keys.length === 0 && (
-          <div className="mt-4 rounded-2xl border border-fog-100 bg-white/80 px-4 py-3 text-sm text-ink-600">
-            No API keys found. Enter a user ID and create a key.
+          <div className="mt-6 rounded-2xl border border-fog-100 bg-white/80 px-4 py-6 text-sm text-ink-600">
+            No API keys found. Create one to get started.
+          </div>
+        )}
+
+        {!loading && keys.length > 0 && (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {keys.map((key) => (
+              <ApiKeyCard
+                key={key.id}
+                apiKey={maskKey(key.apiKey)}
+                createdAt={formatDate(key.createdAt)}
+                status="Active"
+                deleting={deletingId === key.id}
+                onCopy={() => handleCopyKey(key.apiKey)}
+                onDelete={() => handleDeleteKey(key.id)}
+              />
+            ))}
           </div>
         )}
       </div>

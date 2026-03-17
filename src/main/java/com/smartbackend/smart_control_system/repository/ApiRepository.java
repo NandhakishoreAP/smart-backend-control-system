@@ -14,4 +14,6 @@ public interface ApiRepository extends JpaRepository<Api, Long> {
     Optional<Api> findByNameIgnoreCase(String name);
 
     Optional<Api> findBySlug(String slug);
+
+    long countByActiveTrue();
 }

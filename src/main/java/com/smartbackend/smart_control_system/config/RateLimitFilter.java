@@ -33,6 +33,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String clientIp = request.getRemoteAddr();
+        String path = request.getRequestURI();
+
+        if (path.startsWith("/api-keys") ||
+            path.startsWith("/subscriptions") ||
+            path.startsWith("/analytics") ||
+            path.startsWith("/apis")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if (rateLimitService.isRateLimited(clientIp)) {
 

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import ApiCard from '../components/ApiCard'
-import { getApis } from '../services/apiClient'
+import { getApis, getSubscriptions } from '../api/api'
 
 function ApiCatalog() {
   const [apis, setApis] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [subscribedIds, setSubscribedIds] = useState(new Set())
 
   useEffect(() => {
     let isMounted = true
@@ -14,8 +15,14 @@ function ApiCatalog() {
       try {
         setLoading(true)
         const data = await getApis()
+        const userId = localStorage.getItem('userId')
+        let subscriptions = []
+        if (userId) {
+          subscriptions = await getSubscriptions(userId)
+        }
         if (isMounted) {
           setApis(data)
+          setSubscribedIds(new Set(subscriptions.map((item) => item.apiId)))
           setError('')
         }
       } catch (err) {
@@ -66,6 +73,7 @@ function ApiCatalog() {
             description={api.description}
             rateLimit={api.rateLimit}
             slug={api.slug}
+            subscribed={subscribedIds.has(api.id)}
           />
         ))}
       </div>

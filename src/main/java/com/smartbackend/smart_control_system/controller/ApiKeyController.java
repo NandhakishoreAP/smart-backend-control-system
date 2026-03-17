@@ -7,6 +7,9 @@ import com.smartbackend.smart_control_system.repository.UserRepository;
 import com.smartbackend.smart_control_system.service.ApiKeyService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api-keys")
 public class ApiKeyController {
@@ -29,5 +32,26 @@ public ApiKeyResponse generateKey(@PathVariable Long userId){
     ApiKey apiKey = apiKeyService.generateApiKey(user);
 
     return apiKeyService.convertToResponse(apiKey);
+    }
+
+    @GetMapping
+    public List<ApiKeyResponse> getAllKeys() {
+        return apiKeyService.getAllApiKeys();
+    }
+
+    @PostMapping
+    public ApiKeyResponse createKey(@RequestParam Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        ApiKey apiKey = apiKeyService.generateApiKey(user);
+
+        return apiKeyService.convertToResponse(apiKey);
+    }
+
+    @DeleteMapping("/{id}")
+    public Map<String, String> deleteKey(@PathVariable Long id) {
+        apiKeyService.deleteApiKey(id);
+        return Map.of("message", "API key deleted successfully");
     }
 }

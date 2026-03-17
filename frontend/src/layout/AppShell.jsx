@@ -47,7 +47,7 @@ function AppShell() {
     const trimmed = apiKey.trim()
     localStorage.setItem('apiKey', trimmed)
     localStorage.removeItem('scs_api_key')
-    setApiKey('')
+    setApiKey(trimmed)
     setShowSaved(true)
     setSavedVisible(true)
     window.setTimeout(() => setSavedVisible(false), 1400)
@@ -74,7 +74,7 @@ function AppShell() {
     return pageTitles[location.pathname] || pageTitles['/']
   }, [location.pathname])
 
-  const showMissingKey = apiKey.trim().length === 0
+  const showMissingKey = localStorage.getItem('apiKey')?.trim().length === 0
 
   return (
     <div className="min-h-screen text-ink-900">
