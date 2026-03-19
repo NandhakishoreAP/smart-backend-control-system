@@ -5,9 +5,18 @@ public class ApiResponse {
     private Long id;
     private String name;
     private String slug;
+    private String version;
     private String description;
     private boolean active;
     private Integer rateLimit;
+    private Integer violationThreshold;
+    private Integer violationWindowSeconds;
+    private Integer blockDurationSeconds;
+    private Integer usageThresholdPercent;
+    private String resetInterval;
+    private String upstreamUrl;
+    private Long providerId;
+    private String createdAt;
 
     public Long getId() {
         return id;
@@ -33,6 +42,14 @@ public class ApiResponse {
         this.slug = slug;
     }
 
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -55,5 +72,69 @@ public class ApiResponse {
 
     public void setRateLimit(Integer rateLimit) {
         this.rateLimit = rateLimit;
+    }
+
+    public Integer getViolationThreshold() {
+        return violationThreshold;
+    }
+
+    public void setViolationThreshold(Integer violationThreshold) {
+        this.violationThreshold = violationThreshold;
+    }
+
+    public Integer getViolationWindowSeconds() {
+        return violationWindowSeconds;
+    }
+
+    public void setViolationWindowSeconds(Integer violationWindowSeconds) {
+        this.violationWindowSeconds = violationWindowSeconds;
+    }
+
+    public Integer getBlockDurationSeconds() {
+        return blockDurationSeconds;
+    }
+
+    public void setBlockDurationSeconds(Integer blockDurationSeconds) {
+        this.blockDurationSeconds = blockDurationSeconds;
+    }
+
+    public Integer getUsageThresholdPercent() {
+        return usageThresholdPercent;
+    }
+
+    public void setUsageThresholdPercent(Integer usageThresholdPercent) {
+        this.usageThresholdPercent = usageThresholdPercent;
+    }
+
+    public String getResetInterval() {
+        return resetInterval;
+    }
+
+    public void setResetInterval(String resetInterval) {
+        this.resetInterval = resetInterval;
+    }
+
+    public String getUpstreamUrl() {
+        return upstreamUrl;
+    }
+
+    public void setUpstreamUrl(String upstreamUrl) {
+        this.upstreamUrl = upstreamUrl;
+    }
+
+    public Long getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(Long providerId) {
+        this.providerId = providerId;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
     }
 }

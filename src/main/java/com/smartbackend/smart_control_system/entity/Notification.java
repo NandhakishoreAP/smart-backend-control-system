@@ -11,14 +11,13 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String title;
-
     private String message;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = NotificationTypeConverter.class)
     private NotificationType type;
 
-    private boolean readStatus;
+    @Column(name = "read_status")
+    private boolean read;
 
     private LocalDateTime createdAt;
 
@@ -28,33 +27,34 @@ public class Notification {
 
     public Notification() {
         this.createdAt = LocalDateTime.now();
-        this.readStatus = false;
+        this.read = false;
     }
 
-    public Notification(String title, String message, NotificationType type, User user) {
-        this.title = title;
+    public Notification(String message, NotificationType type, User user) {
         this.message = message;
         this.type = type;
         this.user = user;
         this.createdAt = LocalDateTime.now();
-        this.readStatus = false;
+        this.read = false;
     }
 
     public Long getId() { return id; }
-
-    public String getTitle() { return title; }
 
     public String getMessage() { return message; }
 
     public NotificationType getType() { return type; }
 
-    public boolean isReadStatus() { return readStatus; }
+    public boolean isRead() { return read; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public User getUser() { return user; }
 
-    public void setReadStatus(boolean readStatus) {
-        this.readStatus = readStatus;
+    public void setRead(boolean read) {
+        this.read = read;
+    }
+
+    public Long getUserId() {
+        return user == null ? null : user.getId();
     }
 }

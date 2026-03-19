@@ -7,36 +7,36 @@ import java.time.LocalDateTime;
 public class NotificationResponse {
 
     private Long id;
-    private String title;
+    private Long userId;
     private String message;
     private NotificationType type;
-    private boolean readStatus;
+    private boolean read;
     private LocalDateTime createdAt;
 
     public NotificationResponse(Long id,
-                                String title,
+                                Long userId,
                                 String message,
                                 NotificationType type,
-                                boolean readStatus,
+                                boolean read,
                                 LocalDateTime createdAt) {
 
         this.id = id;
-        this.title = title;
+        this.userId = userId;
         this.message = message;
         this.type = type;
-        this.readStatus = readStatus;
+        this.read = read;
         this.createdAt = createdAt;
     }
 
     public Long getId() { return id; }
 
-    public String getTitle() { return title; }
+    public Long getUserId() { return userId; }
 
     public String getMessage() { return message; }
 
     public NotificationType getType() { return type; }
 
-    public boolean isReadStatus() { return readStatus; }
+    public boolean isRead() { return read; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "apis")
+@Table(name = "apis", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"slug", "version"})
+})
 public class Api {
 
     @Id
@@ -18,13 +20,30 @@ public class Api {
     @Column(unique = true)
     private String basePath;
 
-    @Column(unique = true)
     private String slug;
+
+    private String version;
 
     @Column(name = "upstream_url")
     private String upstreamUrl;
 
     private int rateLimit;
+
+    @Column(name = "violation_threshold")
+    private Integer violationThreshold;
+
+    @Column(name = "violation_window_seconds")
+    private Integer violationWindowSeconds;
+
+    @Column(name = "block_duration_seconds")
+    private Integer blockDurationSeconds;
+
+    @Column(name = "usage_threshold_percent")
+    private Integer usageThresholdPercent;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reset_interval")
+    private ResetInterval resetInterval;
 
     private boolean active;
 
@@ -37,6 +56,12 @@ public class Api {
     public Api() {
         this.createdAt = LocalDateTime.now();
         this.active = true;
+        this.version = "v1";
+        this.violationThreshold = 3;
+        this.violationWindowSeconds = 300;
+        this.blockDurationSeconds = 900;
+        this.usageThresholdPercent = 80;
+        this.resetInterval = ResetInterval.DAILY;
     }
 
     // ---------- GETTERS & SETTERS ----------
@@ -79,6 +104,16 @@ public class Api {
         this.slug = slug;
     }
 
+    // -------- VERSION --------
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
     // -------- UPSTREAM URL --------
 
     public String getUpstreamUrl() {
@@ -97,6 +132,46 @@ public class Api {
 
     public void setRateLimit(int rateLimit) {
         this.rateLimit = rateLimit;
+    }
+
+    public Integer getViolationThreshold() {
+        return violationThreshold;
+    }
+
+    public void setViolationThreshold(Integer violationThreshold) {
+        this.violationThreshold = violationThreshold;
+    }
+
+    public Integer getViolationWindowSeconds() {
+        return violationWindowSeconds;
+    }
+
+    public void setViolationWindowSeconds(Integer violationWindowSeconds) {
+        this.violationWindowSeconds = violationWindowSeconds;
+    }
+
+    public Integer getBlockDurationSeconds() {
+        return blockDurationSeconds;
+    }
+
+    public void setBlockDurationSeconds(Integer blockDurationSeconds) {
+        this.blockDurationSeconds = blockDurationSeconds;
+    }
+
+    public Integer getUsageThresholdPercent() {
+        return usageThresholdPercent;
+    }
+
+    public void setUsageThresholdPercent(Integer usageThresholdPercent) {
+        this.usageThresholdPercent = usageThresholdPercent;
+    }
+
+    public ResetInterval getResetInterval() {
+        return resetInterval;
+    }
+
+    public void setResetInterval(ResetInterval resetInterval) {
+        this.resetInterval = resetInterval;
     }
 
     // -------- ACTIVE --------

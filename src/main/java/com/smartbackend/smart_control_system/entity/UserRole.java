@@ -4,6 +4,7 @@ public enum UserRole {
 
     ADMIN,
     API_PROVIDER,
+    API_CONSUMER,
     API_USER,
     GUEST
 }

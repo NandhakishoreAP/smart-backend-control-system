@@ -1,80 +1,119 @@
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
+import {
+  getUnreadNotifications,
+  getUserNotifications,
+  markNotificationRead,
+} from '../api/api'
 
-const navItems = [
-  { label: 'Overview', path: '/' },
-  { label: 'APIs', path: '/apis' },
-  { label: 'API Keys', path: '/api-keys' },
-  { label: 'Subscriptions', path: '/subscriptions' },
+const consumerNavItems = [
+  { label: 'Dashboard', path: '/dashboard' },
   { label: 'Analytics', path: '/analytics' },
-  { label: 'Alerts', path: '/alerts' },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Usage', path: '/usage' },
+  { label: 'Request Logs', path: '/request-logs' },
+  { label: 'API Catalog', path: '/apis' },
+  { label: 'Subscriptions', path: '/subscriptions' },
+  { label: 'API Keys', path: '/api-keys' },
+  { label: 'API Tester', path: '/tester' },
+]
+
+const providerNavItems = [
+  { label: 'Dashboard', path: '/provider/dashboard' },
+  { label: 'My APIs', path: '/provider/apis' },
+  { label: 'Create API', path: '/provider/create' },
+  { label: 'Analytics', path: '/provider/analytics' },
+  { label: 'Health Monitor', path: '/provider/health' },
 ]
 
 const pageTitles = {
-  '/': { eyebrow: 'Dashboard', title: 'Control & Notifications' },
+  '/dashboard': { eyebrow: 'Dashboard', title: 'Control & Notifications' },
   '/apis': { eyebrow: 'Catalog', title: 'API Portfolio' },
   '/api-keys': { eyebrow: 'Access', title: 'Key Management' },
   '/subscriptions': { eyebrow: 'Plans', title: 'Subscriptions' },
+  '/tester': { eyebrow: 'Testing', title: 'API Tester' },
   '/analytics': { eyebrow: 'Insights', title: 'Traffic Analytics' },
+  '/usage': { eyebrow: 'Insights', title: 'Usage Tracking' },
+  '/request-logs': { eyebrow: 'Insights', title: 'Request Logs' },
   '/alerts': { eyebrow: 'Signals', title: 'Alerts Center' },
   '/settings': { eyebrow: 'System', title: 'Gateway Settings' },
+  '/provider/dashboard': { eyebrow: 'Publisher', title: 'API Provider Dashboard' },
+  '/provider/apis': { eyebrow: 'Publisher', title: 'My APIs' },
+  '/provider/create': { eyebrow: 'Publisher', title: 'Create API' },
+  '/provider/analytics': { eyebrow: 'Publisher', title: 'API Analytics' },
+  '/provider/health': { eyebrow: 'Publisher', title: 'Health Monitor' },
 }
 
 function AppShell() {
   const location = useLocation()
-  const [apiKey, setApiKey] = useState('')
-  const [showCopied, setShowCopied] = useState(false)
-  const [toastVisible, setToastVisible] = useState(false)
-  const [showSaved, setShowSaved] = useState(false)
-  const [savedVisible, setSavedVisible] = useState(false)
+  const navigate = useNavigate()
+  const role = localStorage.getItem('role')
+  const userId = localStorage.getItem('userId')
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotifications, setShowNotifications] = useState(false)
 
-  useEffect(() => {
-    const storedPrimary = localStorage.getItem('apiKey')
-    const storedLegacy = localStorage.getItem('scs_api_key')
-    if (storedPrimary) {
-      setApiKey(storedPrimary)
-      return
-    }
-    if (storedLegacy) {
-      localStorage.setItem('apiKey', storedLegacy)
-      localStorage.removeItem('scs_api_key')
-      setApiKey(storedLegacy)
-    }
-  }, [])
-
-  const handleSaveKey = () => {
-    const trimmed = apiKey.trim()
-    localStorage.setItem('apiKey', trimmed)
-    localStorage.removeItem('scs_api_key')
-    setApiKey(trimmed)
-    setShowSaved(true)
-    setSavedVisible(true)
-    window.setTimeout(() => setSavedVisible(false), 1400)
-    window.setTimeout(() => setShowSaved(false), 1800)
-  }
-
-  const handleCopyHeader = async () => {
-    const value = `X-API-KEY: ${apiKey.trim() || '<your-key>'}`
-    try {
-      await navigator.clipboard.writeText(value)
-      setShowCopied(true)
-      setToastVisible(true)
-      window.setTimeout(() => setToastVisible(false), 1400)
-      window.setTimeout(() => setShowCopied(false), 1800)
-    } catch (err) {
-      console.error('Failed to copy header', err)
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('role')
+    localStorage.removeItem('authToken')
+    sessionStorage.removeItem('token')
+    setNotifications([])
+    setUnreadCount(0)
+    navigate('/login', { replace: true })
   }
 
   const header = useMemo(() => {
     if (location.pathname.startsWith('/apis/')) {
       return { eyebrow: 'Catalog', title: 'API Details' }
     }
-    return pageTitles[location.pathname] || pageTitles['/']
+    return pageTitles[location.pathname] || pageTitles['/dashboard']
   }, [location.pathname])
 
-  const showMissingKey = localStorage.getItem('apiKey')?.trim().length === 0
+  const navItems = role === 'API_PROVIDER' ? providerNavItems : consumerNavItems
+
+  const loadNotifications = async () => {
+    if (!userId) {
+      setNotifications([])
+      setUnreadCount(0)
+      return
+    }
+    try {
+      const [all, unread] = await Promise.all([
+        getUserNotifications(userId),
+        getUnreadNotifications(userId),
+      ])
+      const sorted = [...all].sort((left, right) =>
+        new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+      )
+      setNotifications(sorted)
+      setUnreadCount(unread.length)
+    } catch (error) {
+      console.error('Failed to load notifications', error)
+    }
+  }
+
+  useEffect(() => {
+    loadNotifications()
+  }, [userId])
+
+  const handleToggleNotifications = async () => {
+    const next = !showNotifications
+    setShowNotifications(next)
+    if (next) {
+      await loadNotifications()
+    }
+  }
+
+  const handleMarkRead = async (notificationId) => {
+    try {
+      await markNotificationRead(notificationId)
+      await loadNotifications()
+    } catch (error) {
+      console.error('Failed to mark notification as read', error)
+    }
+  }
+
 
   return (
     <div className="min-h-screen text-ink-900">
@@ -87,7 +126,7 @@ function AppShell() {
               <p className="text-xs text-fog-200">Gateway Console</p>
             </div>
           </div>
-          <nav className="flex flex-col space-y-1 px-4 py-6">
+          <nav className="flex flex-col gap-2 px-4 py-6">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -110,68 +149,84 @@ function AppShell() {
               <p className="mt-2">Region: ap-south-1</p>
               <p>Cluster: smart-gw-02</p>
             </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-4 flex w-full items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left text-xs font-semibold text-fog-50 transition hover:bg-white/10"
+            >
+              <span>Logout</span>
+              <span aria-hidden="true">&gt;</span>
+            </button>
           </div>
         </aside>
 
         <main className="flex-1 px-6 py-6 lg:px-10">
-          {showCopied && (
-            <div
-              className={`fixed bottom-6 right-6 z-50 rounded-xl border border-mint-400/40 bg-white px-4 py-2 text-sm font-semibold text-ink-900 shadow-glass transition duration-300 ${
-                toastVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
-              }`}
-            >
-              Copied!
-            </div>
-          )}
-          {showSaved && (
-            <div
-              className={`fixed bottom-16 right-6 z-50 rounded-xl border border-mint-400/40 bg-mint-400/15 px-4 py-2 text-sm font-semibold text-ink-900 shadow-glass transition duration-300 ${
-                savedVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
-              }`}
-            >
-              Saved!
-            </div>
-          )}
           <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-ink-600">{header.eyebrow}</p>
               <h1 className="font-display text-3xl font-semibold text-ink-900">{header.title}</h1>
             </div>
-            <div className="flex flex-col gap-2 rounded-2xl border border-fog-100 bg-white/70 p-4 shadow-glass backdrop-blur lg:flex-row lg:items-center">
-              <div>
-                <p className="text-xs text-ink-600">API Key Header</p>
-                <input
-                  value={apiKey}
-                  onChange={(event) => setApiKey(event.target.value)}
-                  placeholder="X-API-KEY"
-                  className="mt-1 w-64 rounded-lg border border-fog-100 bg-white px-3 py-2 text-sm text-ink-900 outline-none focus:border-mint-400"
-                />
-              </div>
-              <button
-                onClick={handleSaveKey}
-                className="rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-fog-50 transition hover:bg-ink-700"
-              >
-                Save Key
-              </button>
-            </div>
-          </header>
-
-          {showMissingKey && (
-            <div className="mb-6 rounded-2xl border border-signal-400/40 bg-signal-400/10 px-4 py-3 text-sm text-ink-800">
-              API key is missing. Add your key above or visit{' '}
-              <Link to="/api-keys" className="font-semibold text-ink-900 underline underline-offset-4">
-                API Keys
-              </Link>{' '}
-              to create one.
+            <div className="relative">
               <button
                 type="button"
-                onClick={handleCopyHeader}
-                className="ml-3 inline-flex items-center rounded-lg border border-ink-900/10 bg-white px-2 py-1 text-xs font-semibold text-ink-900 transition hover:bg-fog-50"
+                onClick={handleToggleNotifications}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-fog-100 bg-white shadow-sm transition hover:bg-fog-50"
+                aria-label="Notifications"
               >
-                Copy header
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  className="h-5 w-5 text-ink-700"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M14 18h-4m8-6V9a6 6 0 10-12 0v3l-2 2v1h16v-1l-2-2z"
+                  />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-signal-400 px-1 text-[10px] font-semibold text-white">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
+
+              {showNotifications && (
+                <div className="absolute right-0 z-20 mt-3 w-80 overflow-hidden rounded-2xl border border-fog-100 bg-white shadow-lg">
+                  <div className="flex items-center justify-between border-b border-fog-100 px-4 py-3">
+                    <p className="text-sm font-semibold text-ink-900">Notifications</p>
+                    <span className="text-xs text-ink-500">{unreadCount} unread</span>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length === 0 && (
+                      <div className="px-4 py-6 text-center text-sm text-ink-500">
+                        No notifications yet.
+                      </div>
+                    )}
+                    {notifications.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleMarkRead(item.id)}
+                        className={`flex w-full flex-col gap-1 px-4 py-3 text-left text-sm transition hover:bg-fog-50 ${
+                          item.read ? 'text-ink-700' : 'bg-mint-400/10 text-ink-900'
+                        }`}
+                      >
+                        <span className="text-xs uppercase tracking-[0.2em] text-ink-400">
+                          {item.type}
+                        </span>
+                        <span className="text-sm text-ink-800">{item.message}</span>
+                        <span className="text-[10px] text-ink-400">
+                          {item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </header>
           <Outlet />
         </main>
       </div>

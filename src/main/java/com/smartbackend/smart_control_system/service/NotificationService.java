@@ -31,7 +31,7 @@ public class NotificationService {
     }
 
     public List<Notification> getUnreadNotifications(User user) {
-        return notificationRepository.findByUserAndReadStatusFalse(user);
+        return notificationRepository.findByUserAndReadFalse(user);
     }
 
     public void markAsRead(Long notificationId) {
@@ -40,36 +40,55 @@ public class NotificationService {
                 .findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
 
-        notification.setReadStatus(true);
+        notification.setRead(true);
 
         notificationRepository.save(notification);
     }
 
     public Notification createNotification(
-            String title,
             String message,
             NotificationType type,
             User user) {
 
+        return createNotification(message, type, user, true);
+    }
+
+    public Notification createNotificationNoEmail(
+            String message,
+            NotificationType type,
+            User user) {
+
+        return createNotification(message, type, user, false);
+    }
+
+    private Notification createNotification(
+            String message,
+            NotificationType type,
+            User user,
+            boolean sendEmail) {
+
         Notification notification =
-                new Notification(title, message, type, user);
+            new Notification(message, type, user);
 
         Notification savedNotification =
                 notificationRepository.save(notification);
 
         // WebSocket push
-        if(user != null){
+        if (user != null) {
+            NotificationResponse response = convertToResponse(savedNotification);
             messagingTemplate.convertAndSend(
-                    "/topic/user/" + user.getId() + "/notifications",
-                    savedNotification
+                "/topic/user/" + user.getId() + "/notifications",
+                response
             );
         }
 
         // Email alert
-        try {
-            emailService.sendAlert(title, message);
-        } catch (Exception e) {
-            System.out.println("Email sending failed: " + e.getMessage());
+        if (sendEmail && user != null && user.getEmail() != null && !user.getEmail().isBlank()) {
+            try {
+                emailService.sendNotificationEmail(user.getEmail(), type, message);
+            } catch (Exception e) {
+                System.out.println("Email sending failed: " + e.getMessage());
+            }
         }
 
         return savedNotification;
@@ -79,10 +98,10 @@ public class NotificationService {
 
         return new NotificationResponse(
                 notification.getId(),
-                notification.getTitle(),
+            notification.getUserId(),
                 notification.getMessage(),
                 notification.getType(),
-                notification.isReadStatus(),
+            notification.isRead(),
                 notification.getCreatedAt()
         );
     }

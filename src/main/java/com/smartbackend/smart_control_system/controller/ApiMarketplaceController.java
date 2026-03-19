@@ -26,4 +26,17 @@ public class ApiMarketplaceController {
     public ApiResponse getApiDetails(@PathVariable String slug) {
         return apiService.getApiDetails(slug);
     }
+
+    @GetMapping("/{slug}/{version}")
+    public ApiResponse getApiDetailsByVersion(
+            @PathVariable String slug,
+            @PathVariable String version) {
+        return apiService.getApiDetails(slug, version);
+    }
+
+    @GetMapping("/{slug}/versions")
+    public List<String> getApiVersions(@PathVariable String slug) {
+        return apiService.getVersionsBySlug(slug);
+    }
+
 }

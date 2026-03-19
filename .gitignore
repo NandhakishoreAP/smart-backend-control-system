@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local environment variables
+.env
+.env.properties
+
+# Node dependencies
+node_modules/
+frontend/node_modules/
+
+# Accidental command output files
+tgres psql*

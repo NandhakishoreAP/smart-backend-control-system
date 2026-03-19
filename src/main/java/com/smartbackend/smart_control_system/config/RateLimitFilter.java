@@ -35,10 +35,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String clientIp = request.getRemoteAddr();
         String path = request.getRequestURI();
 
-        if (path.startsWith("/api-keys") ||
+        if (path.startsWith("/api/users") ||
+            path.startsWith("/api-keys") ||
             path.startsWith("/subscriptions") ||
             path.startsWith("/analytics") ||
-            path.startsWith("/apis")) {
+            path.startsWith("/api-management") ||
+            path.startsWith("/apis") ||
+            path.startsWith("/gateway")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -46,9 +49,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (rateLimitService.isRateLimited(clientIp)) {
 
             notificationService.createNotification(
-                    "Rate Limit Exceeded",
                     "Too many API requests from IP: " + clientIp,
-                    NotificationType.SYSTEM,
+                NotificationType.WARNING,
                     null
             );
 

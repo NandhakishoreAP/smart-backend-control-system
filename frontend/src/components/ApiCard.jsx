@@ -1,13 +1,20 @@
 import { Link } from 'react-router-dom'
 
-function ApiCard({ name, description, rateLimit, slug, subscribed }) {
+function ApiCard({ name, description, rateLimit, slug, subscribed, version }) {
   return (
     <Link
       to={`/apis/${slug}`}
-      className="group flex h-full flex-col rounded-2xl border border-fog-100 bg-white/85 p-5 text-left shadow-glass transition hover:-translate-y-0.5 hover:border-mint-400/60 hover:bg-white"
+      className="group flex h-full min-h-[140px] flex-col rounded-xl bg-white p-6 text-left shadow transition hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-4">
-        <h3 className="font-display text-lg font-semibold text-ink-900">{name}</h3>
+        <div>
+          <h3 className="font-display text-lg font-semibold text-ink-900">{name}</h3>
+          {version && (
+            <span className="mt-2 inline-flex items-center rounded-full bg-fog-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-700">
+              {version}
+            </span>
+          )}
+        </div>
         <span className="rounded-full bg-ink-900 px-2 py-1 text-xs font-semibold text-fog-50">
           {rateLimit} rpm
         </span>
@@ -19,7 +26,7 @@ function ApiCard({ name, description, rateLimit, slug, subscribed }) {
             View API
           </span>
           {subscribed && (
-            <span className="rounded-full bg-mint-400/20 px-2 py-1 text-xs font-semibold text-mint-600">
+            <span className="rounded-full bg-ink-900/10 px-2 py-1 text-xs font-semibold text-ink-700">
               Subscribed
             </span>
           )}

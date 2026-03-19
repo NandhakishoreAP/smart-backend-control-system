@@ -1,6 +1,6 @@
 function ApiKeyCard({ apiKey, createdAt, status, onCopy, onDelete, deleting }) {
   return (
-    <div className="flex h-full min-h-[180px] flex-col justify-between rounded-xl bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div className="flex h-full min-h-[140px] flex-col justify-between rounded-xl bg-white p-6 shadow transition hover:shadow-md">
       <div>
         <div className="flex items-center justify-between">
           <p className="text-xs uppercase tracking-[0.2em] text-ink-600">API Key</p>

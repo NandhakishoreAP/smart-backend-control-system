@@ -9,6 +9,7 @@ function ApiKeys() {
   const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
+  const [toastVisible, setToastVisible] = useState(false)
 
   const formatDate = (value) => {
     const date = new Date(value)
@@ -25,6 +26,8 @@ function ApiKeys() {
 
   const showToast = (message) => {
     setToast(message)
+    setToastVisible(true)
+    window.setTimeout(() => setToastVisible(false), 1400)
     window.setTimeout(() => setToast(''), 1800)
   }
 
@@ -55,6 +58,10 @@ function ApiKeys() {
       setCreating(true)
       const newKey = await createApiKey(userId)
       setKeys((prev) => [newKey, ...prev])
+      if (newKey?.apiKey) {
+        localStorage.setItem('apiKey', newKey.apiKey)
+        window.dispatchEvent(new Event('apiKeyUpdated'))
+      }
       showToast('API Key created')
       setError('')
     } catch (err) {
@@ -95,7 +102,7 @@ function ApiKeys() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-fog-100 bg-white/80 p-6 shadow-glass backdrop-blur">
+      <div className="min-h-[140px] rounded-xl bg-white p-6 shadow">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="font-display text-xl font-semibold">API Keys</h2>
@@ -112,13 +119,17 @@ function ApiKeys() {
         </div>
 
         {toast && (
-          <div className="mt-4 rounded-xl border border-mint-400/40 bg-mint-400/15 px-4 py-3 text-sm font-semibold text-ink-900">
+          <div
+            className={`mt-4 rounded-xl border border-mint-400/40 bg-mint-400/15 p-4 text-sm font-semibold text-ink-900 shadow-glass transition duration-300 ${
+              toastVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+            }`}
+          >
             {toast}
           </div>
         )}
 
         {error && (
-          <div className="mt-4 rounded-2xl border border-signal-400/40 bg-signal-400/10 px-4 py-3 text-sm text-ink-800">
+          <div className="mt-4 rounded-xl border border-signal-400/40 bg-signal-400/10 p-4 text-sm text-ink-800">
             {error}
           </div>
         )}
@@ -131,13 +142,13 @@ function ApiKeys() {
         )}
 
         {!loading && keys.length === 0 && (
-          <div className="mt-6 rounded-2xl border border-fog-100 bg-white/80 px-4 py-6 text-sm text-ink-600">
+          <div className="mt-6 rounded-xl border border-fog-100 bg-white p-4 text-sm text-ink-600">
             No API keys found. Create one to get started.
           </div>
         )}
 
         {!loading && keys.length > 0 && (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             {keys.map((key) => (
               <ApiKeyCard
                 key={key.id}

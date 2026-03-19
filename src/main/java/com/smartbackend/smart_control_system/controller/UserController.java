@@ -1,5 +1,7 @@
 package com.smartbackend.smart_control_system.controller;
 
+import com.smartbackend.smart_control_system.dto.UserLoginRequest;
+import com.smartbackend.smart_control_system.dto.UserLoginResponse;
 import com.smartbackend.smart_control_system.dto.UserRegisterRequest;
 import com.smartbackend.smart_control_system.dto.UserResponse;
 import com.smartbackend.smart_control_system.service.UserService;
@@ -20,5 +22,12 @@ public class UserController {
             @RequestBody UserRegisterRequest request) {
 
         return userService.registerUser(request);
+    }
+
+    @PostMapping("/login")
+    public UserLoginResponse loginUser(
+            @RequestBody UserLoginRequest request) {
+
+        return userService.loginUser(request);
     }
 }

@@ -17,7 +17,6 @@ public class NotificationEventListener {
     public void handleNotificationEvent(NotificationEvent event) {
 
         notificationService.createNotification(
-                event.getTitle(),
                 event.getMessage(),
                 event.getType(),
                 event.getUser()

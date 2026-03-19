@@ -1,8 +1,13 @@
 package com.smartbackend.smart_control_system.controller;
 
 import com.smartbackend.smart_control_system.dto.AnalyticsDashboardResponse;
+import com.smartbackend.smart_control_system.dto.ConsumerDashboardResponse;
+import com.smartbackend.smart_control_system.dto.ConsumerEndpointStatsResponse;
+import com.smartbackend.smart_control_system.dto.UsageStatsResponse;
+import com.smartbackend.smart_control_system.dto.ProviderDashboardResponse;
 import com.smartbackend.smart_control_system.entity.ApiRequestLog;
 import com.smartbackend.smart_control_system.service.ApiAnalyticsService;
+import com.smartbackend.smart_control_system.service.ProviderAnalyticsService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,9 +18,12 @@ import java.util.Map;
 public class AnalyticsController {
 
     private final ApiAnalyticsService analyticsService;
+    private final ProviderAnalyticsService providerAnalyticsService;
 
-    public AnalyticsController(ApiAnalyticsService analyticsService) {
+    public AnalyticsController(ApiAnalyticsService analyticsService,
+                               ProviderAnalyticsService providerAnalyticsService) {
         this.analyticsService = analyticsService;
+        this.providerAnalyticsService = providerAnalyticsService;
     }
 
     @GetMapping("/logs")
@@ -46,5 +54,25 @@ public class AnalyticsController {
     @GetMapping("/dashboard")
     public AnalyticsDashboardResponse dashboard() {
         return analyticsService.getDashboardMetrics();
+    }
+
+    @GetMapping("/consumer-dashboard")
+    public ConsumerDashboardResponse consumerDashboard(@RequestParam String apiKey) {
+        return analyticsService.getConsumerDashboard(apiKey);
+    }
+
+    @GetMapping("/consumer-endpoints")
+    public List<ConsumerEndpointStatsResponse> consumerEndpoints(@RequestParam String apiKey) {
+        return analyticsService.getConsumerEndpointStats(apiKey);
+    }
+
+    @GetMapping("/usage/{userId}")
+    public List<UsageStatsResponse> usageByUser(@PathVariable Long userId) {
+        return analyticsService.getUsageByUser(userId);
+    }
+
+    @GetMapping("/provider/{userId}")
+    public ProviderDashboardResponse providerAnalytics(@PathVariable Long userId) {
+        return providerAnalyticsService.getProviderDashboard(userId);
     }
 }
