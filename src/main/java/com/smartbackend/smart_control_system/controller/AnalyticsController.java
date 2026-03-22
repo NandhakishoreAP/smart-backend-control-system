@@ -26,6 +26,7 @@ public class AnalyticsController {
         this.providerAnalyticsService = providerAnalyticsService;
     }
 
+
     @GetMapping("/logs")
     public List<ApiRequestLog> getAllLogs() {
         return analyticsService.getAllLogs();
@@ -74,5 +75,10 @@ public class AnalyticsController {
     @GetMapping("/provider/{userId}")
     public ProviderDashboardResponse providerAnalytics(@PathVariable Long userId) {
         return providerAnalyticsService.getProviderDashboard(userId);
+    }
+
+    @GetMapping("/provider-subscribers/{providerId}")
+    public List<com.smartbackend.smart_control_system.dto.ProviderSubscriberInsightResponse> getProviderSubscriberInsights(@PathVariable Long providerId) {
+        return providerAnalyticsService.getProviderSubscriberInsights(providerId);
     }
 }

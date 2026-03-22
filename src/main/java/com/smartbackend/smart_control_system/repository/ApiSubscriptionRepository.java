@@ -29,4 +29,9 @@ public interface ApiSubscriptionRepository extends JpaRepository<ApiSubscription
     """)
     long countByProviderId(@Param("providerId") Long providerId);
 
+
+        @Query("SELECT new com.smartbackend.smart_control_system.dto.ProviderSubscriberInsightResponse(s.id, c.name, c.email, a.name, a.slug, a.version, (SELECT COUNT(l.id) FROM ApiRequestLog l WHERE l.apiKey = s.apiKey AND l.endpoint LIKE CONCAT('%', a.slug, '%'))) " +
+            "FROM ApiSubscription s JOIN s.consumer c JOIN s.api a WHERE a.provider.id = :providerId")
+        List<com.smartbackend.smart_control_system.dto.ProviderSubscriberInsightResponse> findSubscriberInsightsByProviderId(@Param("providerId") Long providerId);
+
 }

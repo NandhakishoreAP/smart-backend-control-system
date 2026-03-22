@@ -27,6 +27,7 @@ public class ProviderAnalyticsService {
         this.requestLogRepository = requestLogRepository;
     }
 
+
     public ProviderDashboardResponse getProviderDashboard(Long providerId) {
         List<Api> apis = apiRepository.findByProvider_Id(providerId);
         List<ProviderApiStatsResponse> stats = new ArrayList<>();
@@ -83,4 +84,7 @@ public class ProviderAnalyticsService {
                 stats
         );
     }
-}
+    public List<com.smartbackend.smart_control_system.dto.ProviderSubscriberInsightResponse> getProviderSubscriberInsights(Long providerId) {
+        return subscriptionRepository.findSubscriberInsightsByProviderId(providerId);
+    }
+    }

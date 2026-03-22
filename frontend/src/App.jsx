@@ -21,7 +21,9 @@ import MyApis from './pages/provider/MyApis'
 import CreateApi from './pages/provider/CreateApi'
 import EditApi from './pages/provider/EditApi'
 import ProviderAnalytics from './pages/provider/Analytics'
+
 import ProviderHealth from './pages/provider/Health.jsx'
+import UserProfilePage from './pages/UserProfilePage'
 
 function App() {
   return (
@@ -117,6 +119,9 @@ function App() {
             </RoleRoute>
           }
         />
+
+        <Route path="provider/dashboard" element={<ProviderDashboard />} />
+        <Route path="/profile/:id" element={<UserProfilePage />} />
         <Route
           path="settings"
           element={

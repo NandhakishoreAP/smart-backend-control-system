@@ -53,7 +53,9 @@ public boolean isSubscribed(Long userId, Long apiId) {
             return convertToResponse(existing);
         }
 
-        ApiSubscription subscription = new ApiSubscription(user, api);
+        // Generate a unique API key for this subscription
+        String apiKey = java.util.UUID.randomUUID().toString();
+        ApiSubscription subscription = new ApiSubscription(user, api, apiKey);
         ApiSubscription saved = subscriptionRepository.save(subscription);
 
         String version = api.getVersion() == null || api.getVersion().isBlank() ? "v1" : api.getVersion();

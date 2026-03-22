@@ -1,3 +1,8 @@
+// Get subscriber insights for provider dashboard (real backend call)
+export const getSubscriberInsights = async (providerId) => {
+  const response = await api.get(`/analytics/provider-subscribers/${providerId}`);
+  return response.data;
+};
 import axios from 'axios'
 
 const api = axios.create({

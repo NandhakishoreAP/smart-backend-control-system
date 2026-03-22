@@ -1,47 +1,6 @@
 import { useMemo, useState } from 'react'
 
-const apiCatalog = [
-  {
-    id: 'billing-gateway',
-    name: 'Billing Gateway',
-    route: '/billing/*',
-    owner: 'Finance Platform',
-    status: 'Healthy',
-    version: 'v2.4',
-    latency: '212ms',
-    rps: '420',
-  },
-  {
-    id: 'identity-core',
-    name: 'Identity Core',
-    route: '/identity/*',
-    owner: 'Security',
-    status: 'Warning',
-    version: 'v3.1',
-    latency: '340ms',
-    rps: '860',
-  },
-  {
-    id: 'devices-telemetry',
-    name: 'Devices Telemetry',
-    route: '/devices/telemetry',
-    owner: 'IoT Team',
-    status: 'Healthy',
-    version: 'v1.9',
-    latency: '178ms',
-    rps: '1.2k',
-  },
-  {
-    id: 'notifications-hub',
-    name: 'Notifications Hub',
-    route: '/notify/*',
-    owner: 'Comms',
-    status: 'Degraded',
-    version: 'v1.3',
-    latency: '480ms',
-    rps: '300',
-  },
-]
+const apiCatalog = [] // No sample/test APIs
 
 function Apis() {
   const [apiSearch, setApiSearch] = useState('')

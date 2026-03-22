@@ -1,3 +1,4 @@
+
 package com.smartbackend.smart_control_system;
 
 import org.springframework.boot.SpringApplication;

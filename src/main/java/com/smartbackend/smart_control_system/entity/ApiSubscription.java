@@ -21,10 +21,14 @@ public class ApiSubscription {
     @JoinColumn(name = "consumer_id", nullable = false)
     private User consumer;
 
+
     // API being subscribed
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "api_id", nullable = false)
     private Api api;
+
+    @Column(name = "api_key", unique = true, nullable = false, updatable = false)
+    private String apiKey;
 
     @Column(name = "subscribed_at", nullable = false)
     private LocalDateTime subscribedAt;
@@ -33,10 +37,18 @@ public class ApiSubscription {
 
     public ApiSubscription() {}
 
-    public ApiSubscription(User consumer, Api api) {
+    public ApiSubscription(User consumer, Api api, String apiKey) {
         this.consumer = consumer;
         this.api = api;
+        this.apiKey = apiKey;
         this.subscribedAt = LocalDateTime.now();
+    }
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 
     // ---------- Getters ----------
