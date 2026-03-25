@@ -104,6 +104,10 @@ function Login() {
 
       if (resolvedUserId) {
         localStorage.setItem('userId', resolvedUserId)
+        sessionStorage.setItem('userId', resolvedUserId)
+      } else {
+        localStorage.removeItem('userId')
+        sessionStorage.removeItem('userId')
       }
       if (resolvedRole) {
         localStorage.setItem('role', resolvedRole)

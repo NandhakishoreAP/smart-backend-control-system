@@ -41,7 +41,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             path.startsWith("/analytics") ||
             path.startsWith("/api-management") ||
             path.startsWith("/apis") ||
-            path.startsWith("/gateway")) {
+            path.startsWith("/gateway") ||
+            path.startsWith("/notifications")) {
             filterChain.doFilter(request, response);
             return;
         }

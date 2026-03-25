@@ -54,7 +54,16 @@ public class EmailService {
         message.setTo(to);
         message.setSubject(subject);
         message.setText(body);
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception ex) {
+            logger.error("[EMAIL] Failed to send email: {}", ex.getMessage());
+            if (isDevMode()) {
+                logger.warn("[EMAIL] Swallowing email error in dev mode. Email not sent.");
+            } else {
+                throw ex;
+            }
+        }
     }
 
     public void sendAlert(String subject, String body) {
@@ -76,10 +85,23 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
             mailSender.send(message);
-        } catch (MessagingException ex) {
-            throw new RuntimeException("Failed to send email", ex);
+        } catch (Exception ex) {
+            logger.error("[EMAIL] Failed to send HTML email: {}", ex.getMessage());
+            if (isDevMode()) {
+                logger.warn("[EMAIL] Swallowing HTML email error in dev mode. Email not sent.");
+            } else {
+                throw new RuntimeException("Failed to send email", ex);
+            }
         }
     }
+
+        // Helper to detect dev mode for email error swallowing
+        private boolean isDevMode() {
+            String profile = System.getenv("SPRING_PROFILES_ACTIVE");
+            return profile == null || profile.contains("dev") || profile.contains("local");
+        }
+
+    // Helper to detect dev mode for email error swallowing
 
     public void sendTestEmail() {
         sendEmail(defaultRecipient, "Smart Control Test Email", "Test email from Smart Control System.");

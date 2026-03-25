@@ -2,6 +2,7 @@ package com.smartbackend.smart_control_system.controller;
 
 import com.smartbackend.smart_control_system.entity.Api;
 import com.smartbackend.smart_control_system.repository.ApiRepository;
+import com.smartbackend.smart_control_system.service.ApiAnalyticsService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -23,9 +24,12 @@ public class GatewayController {
 
     private final ApiRepository apiRepository;
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ApiAnalyticsService analyticsService;
 
-    public GatewayController(ApiRepository apiRepository) {
+
+    public GatewayController(ApiRepository apiRepository, ApiAnalyticsService analyticsService) {
         this.apiRepository = apiRepository;
+        this.analyticsService = analyticsService;
     }
 
         @RequestMapping(value = "/{slug}/{version}/**", method = {
@@ -80,10 +84,31 @@ public class GatewayController {
         String body = extractBody(request);
         HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity<Object> response = restTemplate.exchange(targetUrl, method, entity, Object.class);
+            long latency = System.currentTimeMillis() - start;
+            // Log successful request
+            String apiKey = request.getHeader("X-API-KEY");
+            analyticsService.logRequest(
+                apiKey != null ? apiKey : "anonymous",
+                endpoint,
+                method.name(),
+                response.getStatusCodeValue(),
+                latency
+            );
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (HttpStatusCodeException ex) {
+            long latency = System.currentTimeMillis() - start;
+            // Log failed request
+            String apiKey = request.getHeader("X-API-KEY");
+            analyticsService.logRequest(
+                apiKey != null ? apiKey : "anonymous",
+                endpoint,
+                method.name(),
+                ex.getStatusCode().value(),
+                latency
+            );
             return ResponseEntity.status(ex.getStatusCode()).body(ex.getResponseBodyAsString());
         }
     }

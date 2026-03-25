@@ -59,23 +59,23 @@ public class ApiGatewayFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+
         String path = request.getRequestURI();
         long start = System.currentTimeMillis();
 
         // ---------- ALLOW PUBLIC ENDPOINTS ----------
-
         if (path.startsWith("/api/users") ||
-        path.startsWith("/api-keys") ||
-        path.startsWith("/analytics") ||
-        path.startsWith("/api-management") ||
-        path.startsWith("/monitor") ||
-        path.startsWith("/subscriptions") ||
-        path.startsWith("/apis") ||
-        path.startsWith("/admin")) {
-
-        filterChain.doFilter(request, response);
-        return;
-    }
+            path.startsWith("/api-keys") ||
+            path.startsWith("/analytics") ||
+            path.startsWith("/api-management") ||
+            path.startsWith("/monitor") ||
+            path.startsWith("/subscriptions") ||
+            path.startsWith("/apis") ||
+            path.startsWith("/admin") ||
+            path.startsWith("/notifications")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // ---------- API KEY VALIDATION ----------
 

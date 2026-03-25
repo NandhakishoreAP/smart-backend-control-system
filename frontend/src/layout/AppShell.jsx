@@ -1,6 +1,6 @@
 import UserProfileModal from '../components/UserProfileModal';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { ProviderApiProvider } from '../context/ProviderApiContext'
 import { PinnedApiProvider } from '../context/PinnedApiContext'
 import {
@@ -50,7 +50,45 @@ function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const role = localStorage.getItem('role')
-  const userId = localStorage.getItem('userId')
+  // Always sync userId from JWT on mount
+  const [userId, setUserId] = useState(() => localStorage.getItem('userId'))
+
+  // Helper to decode JWT and extract userId
+  function decodeJwt(token) {
+    if (!token) return null;
+    try {
+      const payload = token.split('.')[1]
+      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+      return decoded
+    } catch (e) {
+      return null
+    }
+  }
+
+  // Always sync userId from JWT and force logout if missing/expired
+  useEffect(() => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    if (!token) {
+      localStorage.clear();
+      sessionStorage.clear();
+      setUserId(null);
+      navigate('/login');
+      return;
+    }
+    const decoded = decodeJwt(token)
+    const resolvedUserId = decoded?.userId || decoded?.id || decoded?.user_id || decoded?.sub
+    if (!resolvedUserId) {
+      localStorage.clear();
+      sessionStorage.clear();
+      setUserId(null);
+      navigate('/login');
+      return;
+    }
+    if (resolvedUserId !== localStorage.getItem('userId')) {
+      localStorage.setItem('userId', resolvedUserId)
+      setUserId(resolvedUserId)
+    }
+  }, [navigate])
   // Determine header info based on current path
   const header = pageTitles[location.pathname] || { eyebrow: '', title: '' };
   // Logout handler
@@ -64,6 +102,10 @@ function AppShell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  // Ref for dropdown to handle outside click
+  const dropdownRef = useRef(null)
+  // Ref for notification button to avoid closing when clicking the bell
+  const notifBtnRef = useRef(null)
   const loadNotifications = async () => {
     try {
       const [all, unread] = await Promise.all([
@@ -81,7 +123,9 @@ function AppShell() {
   }
 
   useEffect(() => {
-    loadNotifications()
+    if (userId) {
+      loadNotifications()
+    }
   }, [userId])
 
   const handleToggleNotifications = async () => {
@@ -89,6 +133,42 @@ function AppShell() {
     setShowNotifications(next)
     if (next) {
       await loadNotifications()
+    }
+  }
+
+  // Close dropdown on outside click or Escape
+  useEffect(() => {
+    if (!showNotifications) return;
+    function handleClickOutside(event) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        notifBtnRef.current &&
+        !notifBtnRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false)
+      }
+    }
+    function handleEscape(event) {
+      if (event.key === 'Escape') setShowNotifications(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [showNotifications])
+
+  // Mark all as read
+  const handleMarkAllRead = async () => {
+    try {
+      await Promise.all(
+        notifications.filter(n => !n.read).map(n => markNotificationRead(n.id))
+      )
+      await loadNotifications()
+    } catch (error) {
+      console.error('Failed to mark all as read', error)
     }
   }
 
@@ -159,6 +239,7 @@ function AppShell() {
                   {/* Notification Icon */}
                   <button
                     type="button"
+                    ref={notifBtnRef}
                     onClick={handleToggleNotifications}
                     className="relative flex h-11 w-11 items-center justify-center rounded-full border border-fog-100 bg-white shadow-sm transition hover:bg-fog-50"
                     aria-label="Notifications"
@@ -199,34 +280,59 @@ function AppShell() {
                   </button>
                   {/* Notifications Dropdown */}
                   {showNotifications && (
-                    <div className="absolute right-0 z-20 mt-14 w-80 overflow-hidden rounded-2xl border border-fog-100 bg-white shadow-lg">
-                      <div className="flex items-center justify-between border-b border-fog-100 px-4 py-3">
-                        <p className="text-sm font-semibold text-ink-900">Notifications</p>
-                        <span className="text-xs text-ink-500">{unreadCount} unread</span>
-                      </div>
-                      <div className="max-h-96 overflow-y-auto">
-                        {notifications.length === 0 && (
-                          <div className="px-4 py-6 text-center text-sm text-ink-500">
-                            No notifications yet.
+                    <div
+                      ref={dropdownRef}
+                      className="fixed top-0 left-0 w-screen h-screen z-40 flex items-start justify-end"
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      <div
+                        className="mt-24 mr-8 w-96 max-h-[80vh] overflow-y-auto rounded-2xl border border-fog-100 bg-white shadow-lg"
+                        style={{ pointerEvents: 'auto' }}
+                      >
+                        <div className="flex items-center justify-between border-b border-fog-100 px-4 py-3 sticky top-0 bg-white z-10">
+                          <p className="text-sm font-semibold text-ink-900">Notifications</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-ink-500">{unreadCount} unread</span>
+                            <button
+                              className="ml-2 px-2 py-1 text-xs rounded bg-fog-100 hover:bg-fog-200 text-ink-700"
+                              onClick={handleMarkAllRead}
+                              disabled={unreadCount === 0}
+                            >
+                              Mark all read
+                            </button>
+                            <button
+                              className="ml-2 px-2 py-1 text-xs rounded bg-fog-100 hover:bg-fog-200 text-ink-700"
+                              onClick={() => setShowNotifications(false)}
+                              aria-label="Close notifications"
+                            >
+                              ×
+                            </button>
                           </div>
-                        )}
-                        {notifications.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => handleMarkRead(item.id)}
-                            className={`flex w-full flex-col gap-1 px-4 py-3 text-left text-sm transition hover:bg-fog-50 ${
-                              item.read ? 'text-ink-700' : 'bg-mint-400/10 text-ink-900'
-                            }`}
-                          >
-                            <span className="text-xs uppercase tracking-[0.2em] text-ink-400">
-                              {item.type}
-                            </span>
-                            <span className="text-sm text-ink-800">{item.message}</span>
-                            <span className="text-[10px] text-ink-400">
-                              {item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}
-                            </span>
-                          </button>
-                        ))}
+                        </div>
+                        <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 56px)' }}>
+                          {notifications.length === 0 && (
+                            <div className="px-4 py-6 text-center text-sm text-ink-500">
+                              No notifications yet.
+                            </div>
+                          )}
+                          {notifications.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => handleMarkRead(item.id)}
+                              className={`flex w-full flex-col gap-1 px-4 py-3 text-left text-sm transition hover:bg-fog-50 ${
+                                item.read ? 'text-ink-700' : 'bg-mint-400/10 text-ink-900'
+                              }`}
+                            >
+                              <span className="text-xs uppercase tracking-[0.2em] text-ink-400">
+                                {item.type}
+                              </span>
+                              <span className="text-sm text-ink-800">{item.message}</span>
+                              <span className="text-[10px] text-ink-400">
+                                {item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}

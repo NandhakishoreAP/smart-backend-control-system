@@ -83,8 +83,26 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
             user
         );
 
+        // Notify provider (in-system and email)
+        notificationService.createNotification(buildPublishMessage(api), NotificationType.INFO, user);
         sendPublishEmail(user, api);
-            notifyProvider(user, buildPublishMessage(api));
+
+        // Notify all subscribers (consumers) in-system and by email
+        List<com.smartbackend.smart_control_system.entity.ApiSubscription> subscriptions = subscriptionRepository.findAll();
+        for (com.smartbackend.smart_control_system.entity.ApiSubscription sub : subscriptions) {
+            if (sub.getApi().getId().equals(api.getId())) {
+                notificationService.createNotification(
+                    "A new API you subscribed to is now live: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")",
+                    NotificationType.INFO,
+                    sub.getConsumer()
+                );
+                emailService.sendNotificationEmail(
+                    sub.getConsumer().getEmail(),
+                    NotificationType.INFO,
+                    "A new API you subscribed to is now live: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")"
+                );
+            }
+        }
 
     return apiService.convertToResponse(api);
 }
@@ -193,7 +211,26 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
             );
 
             sendPublishEmail(user, api);
-            notifyProvider(user, buildPublishMessage(api));
+            // Notify provider (in-system and email)
+            notificationService.createNotification(buildPublishMessage(api), NotificationType.INFO, user);
+            sendPublishEmail(user, api);
+
+            // Notify all subscribers (consumers) in-system and by email
+            List<com.smartbackend.smart_control_system.entity.ApiSubscription> subscriptions = subscriptionRepository.findAll();
+            for (com.smartbackend.smart_control_system.entity.ApiSubscription sub : subscriptions) {
+                if (sub.getApi().getId().equals(api.getId())) {
+                    notificationService.createNotification(
+                        "A new API you subscribed to is now live: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")",
+                        NotificationType.INFO,
+                        sub.getConsumer()
+                    );
+                    emailService.sendNotificationEmail(
+                        sub.getConsumer().getEmail(),
+                        NotificationType.INFO,
+                        "A new API you subscribed to is now live: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")"
+                    );
+                }
+            }
 
             return ResponseEntity.ok(apiService.convertToResponse(api));
         } catch (IllegalArgumentException ex) {
@@ -208,7 +245,7 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
         if (user == null) {
             return;
         }
-        notificationService.createNotificationNoEmail(message, NotificationType.INFO, user);
+        notificationService.createNotification(message, NotificationType.INFO, user);
     }
 
     private String buildPublishMessage(Api api) {
@@ -446,8 +483,26 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
         try {
             Api api = apiService.getApiForProvider(apiId, auth.userId);
             apiService.deleteApi(apiId, auth.userId);
-            notifyProvider(api.getProvider(), buildDeleteMessage(api));
+            // Notify provider (in-system and email)
+            notificationService.createNotification(buildDeleteMessage(api), NotificationType.INFO, api.getProvider());
             sendDeleteEmail(api.getProvider(), api);
+
+            // Notify all subscribers (consumers) in-system and by email
+            List<com.smartbackend.smart_control_system.entity.ApiSubscription> subscriptions = subscriptionRepository.findAll();
+            for (com.smartbackend.smart_control_system.entity.ApiSubscription sub : subscriptions) {
+                if (sub.getApi().getId().equals(api.getId())) {
+                    notificationService.createNotification(
+                        "An API you subscribed to was deleted: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")",
+                        NotificationType.INFO,
+                        sub.getConsumer()
+                    );
+                    emailService.sendNotificationEmail(
+                        sub.getConsumer().getEmail(),
+                        NotificationType.INFO,
+                        "An API you subscribed to was deleted: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")"
+                    );
+                }
+            }
             return ResponseEntity.ok(Map.of("message", "API deleted successfully"));
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(403).build();
@@ -475,8 +530,26 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
                 return ResponseEntity.status(403).build();
             }
             apiService.deleteApiBySlugVersion(auth.userId, slug, version);
-            notifyProvider(api.getProvider(), buildDeleteMessage(api));
+            // Notify provider (in-system and email)
+            notificationService.createNotification(buildDeleteMessage(api), NotificationType.INFO, api.getProvider());
             sendDeleteEmail(api.getProvider(), api);
+
+            // Notify all subscribers (consumers) in-system and by email
+            List<com.smartbackend.smart_control_system.entity.ApiSubscription> subscriptions = subscriptionRepository.findAll();
+            for (com.smartbackend.smart_control_system.entity.ApiSubscription sub : subscriptions) {
+                if (sub.getApi().getId().equals(api.getId())) {
+                    notificationService.createNotification(
+                        "An API you subscribed to was deleted: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")",
+                        NotificationType.INFO,
+                        sub.getConsumer()
+                    );
+                    emailService.sendNotificationEmail(
+                        sub.getConsumer().getEmail(),
+                        NotificationType.INFO,
+                        "An API you subscribed to was deleted: " + api.getName() + " (" + (api.getVersion() == null ? "v1" : api.getVersion()) + ")"
+                    );
+                }
+            }
             return ResponseEntity.ok(Map.of("message", "API deleted successfully"));
         } catch (RuntimeException ex) {
             if ("API not found".equals(ex.getMessage())) {

@@ -28,45 +28,47 @@ function Analytics() {
   const [dashboardError, setDashboardError] = useState('')
 
   useEffect(() => {
-    let isMounted = true
-    const apiKey = localStorage.getItem('apiKey')
+    let isMounted = true;
+    const apiKey = localStorage.getItem('apiKey');
     if (!apiKey) {
-      setError('Missing API key. Save one in the header first.')
-      setLoading(false)
+      setError('Missing API key. Save one in the header first.');
+      setLoading(false);
       return () => {
-        isMounted = false
-      }
+        isMounted = false;
+      };
     }
 
     const loadAnalytics = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const [summaryData, endpointData] = await Promise.all([
           getConsumerDashboard(apiKey),
           getConsumerEndpointStats(apiKey),
-        ])
+        ]);
         if (isMounted) {
-          setSummary(summaryData)
-          setEndpoints(endpointData || [])
-          setError('')
+          setSummary(summaryData);
+          setEndpoints(endpointData || []);
+          setError('');
         }
       } catch (err) {
         if (isMounted) {
-          setError(err?.message || 'Failed to load analytics.')
+          setError(err?.message || 'Failed to load analytics.');
         }
       } finally {
         if (isMounted) {
-          setLoading(false)
+          setLoading(false);
         }
       }
-    }
+    };
 
-    loadAnalytics()
+    loadAnalytics();
+    const intervalId = window.setInterval(loadAnalytics, 15000);
 
     return () => {
-      isMounted = false
-    }
-  }, [])
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true
