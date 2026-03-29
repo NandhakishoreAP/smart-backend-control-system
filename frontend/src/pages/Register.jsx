@@ -61,11 +61,12 @@ function Register() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-fog-50 via-white to-mint-50 px-4 py-16">
-      <div className="mx-auto w-full max-w-md rounded-2xl border border-fog-100 bg-white/90 p-8 shadow-glass backdrop-blur">
-        <div className="mb-6 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-ink-600">Get started</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold text-ink-900">Create account</h1>
-          <p className="mt-2 text-sm text-ink-600">Publish and consume APIs with confidence.</p>
+      <div className="mx-auto w-full max-w-md rounded-3xl border border-fog-100 bg-white shadow-2xl p-8 backdrop-blur-sm">
+        <div className="mb-8 text-center flex flex-col items-center">
+          <img src="/ape-logo.jpg" className="h-28 w-28 object-cover mb-4 rounded-3xl shadow-2xl border-4 border-white bg-fog-50 p-1" alt="Ape Logo" />
+          <h1 className="font-display text-4xl font-black text-ink-900 uppercase tracking-tighter leading-none">APE</h1>
+          <p className="mt-1 text-xs uppercase tracking-[0.4em] font-black text-ink-500">Gateway Console</p>
+          <p className="mt-4 text-xs font-bold text-ink-400 opacity-80 uppercase tracking-widest leading-relaxed px-4">Universal API Access &<br/>Control Point</p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>

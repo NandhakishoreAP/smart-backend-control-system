@@ -16,6 +16,11 @@ public class CreateApiRequest {
     private Integer usageThresholdPercent;
     private String resetInterval;
 
+    // Mock Response
+    private Boolean isMockResponseEnabled;
+    private String mockResponseBody;
+    private Integer mockResponseStatus;
+
     public Long getUserId() { return userId; }
 
     public String getName() { return name; }
@@ -42,6 +47,12 @@ public class CreateApiRequest {
 
     public String getResetInterval() { return resetInterval; }
 
+    public Boolean getIsMockResponseEnabled() { return isMockResponseEnabled; }
+
+    public String getMockResponseBody() { return mockResponseBody; }
+
+    public Integer getMockResponseStatus() { return mockResponseStatus; }
+
     public void setUserId(Long userId) { this.userId = userId; }
 
     public void setName(String name) { this.name = name; }
@@ -67,4 +78,10 @@ public class CreateApiRequest {
     public void setUsageThresholdPercent(Integer usageThresholdPercent) { this.usageThresholdPercent = usageThresholdPercent; }
 
     public void setResetInterval(String resetInterval) { this.resetInterval = resetInterval; }
+
+    public void setIsMockResponseEnabled(Boolean isMockResponseEnabled) { this.isMockResponseEnabled = isMockResponseEnabled; }
+
+    public void setMockResponseBody(String mockResponseBody) { this.mockResponseBody = mockResponseBody; }
+
+    public void setMockResponseStatus(Integer mockResponseStatus) { this.mockResponseStatus = mockResponseStatus; }
 }

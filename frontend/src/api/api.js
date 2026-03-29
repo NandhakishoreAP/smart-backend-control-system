@@ -140,6 +140,16 @@ export const createProviderApi = async (payload) => {
   return response.data
 }
 
+export const duplicateApiAsMock = async (apiId) => {
+  const response = await api.post(`/api-management/${apiId}/duplicate-mock`)
+  return response.data
+}
+
+export const replaceOriginalApiWithMock = async (apiId) => {
+  const response = await api.post(`/api-management/${apiId}/replace-original`)
+  return response.data
+}
+
 export const getProviderAnalytics = async () => {
   const response = await api.get('/api-management/provider/analytics')
   return response.data

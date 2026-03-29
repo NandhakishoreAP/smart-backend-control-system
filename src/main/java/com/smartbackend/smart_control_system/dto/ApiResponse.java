@@ -16,6 +16,16 @@ public class ApiResponse {
     private String resetInterval;
     private String upstreamUrl;
     private Long providerId;
+    
+    // Mock Response
+    private boolean isMockResponseEnabled;
+    private String mockResponseBody;
+    private Integer mockResponseStatus;
+
+    // Mock API
+    private boolean isMockedApi;
+    private Long originalApiId;
+
     private String createdAt;
 
     public Long getId() {
@@ -136,5 +146,45 @@ public class ApiResponse {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isMockResponseEnabled() {
+        return isMockResponseEnabled;
+    }
+
+    public void setMockResponseEnabled(boolean mockResponseEnabled) {
+        isMockResponseEnabled = mockResponseEnabled;
+    }
+
+    public String getMockResponseBody() {
+        return mockResponseBody;
+    }
+
+    public void setMockResponseBody(String mockResponseBody) {
+        this.mockResponseBody = mockResponseBody;
+    }
+
+    public Integer getMockResponseStatus() {
+        return mockResponseStatus;
+    }
+
+    public void setMockResponseStatus(Integer mockResponseStatus) {
+        this.mockResponseStatus = mockResponseStatus;
+    }
+
+    public boolean isMockedApi() {
+        return isMockedApi;
+    }
+
+    public void setMockedApi(boolean mockedApi) {
+        isMockedApi = mockedApi;
+    }
+
+    public Long getOriginalApiId() {
+        return originalApiId;
+    }
+
+    public void setOriginalApiId(Long originalApiId) {
+        this.originalApiId = originalApiId;
     }
 }

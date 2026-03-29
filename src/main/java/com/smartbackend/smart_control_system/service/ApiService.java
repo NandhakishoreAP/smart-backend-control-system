@@ -144,6 +144,15 @@ public ApiResponse getApiDetails(String slug, String version) {
     response.setProviderId(api.getProvider() == null ? null : api.getProvider().getId());
     response.setCreatedAt(api.getCreatedAt() == null ? null : api.getCreatedAt().toString());
 
+    // Mock Response
+    response.setMockResponseEnabled(api.isMockResponseEnabled());
+    response.setMockResponseBody(api.getMockResponseBody());
+    response.setMockResponseStatus(api.getMockResponseStatus());
+
+    // Mock API
+    response.setMockedApi(api.isMockedApi());
+    response.setOriginalApiId(api.getOriginalApiId());
+
     return response;
 }
 
@@ -228,6 +237,102 @@ public ApiResponse getApiDetails(String slug, String version) {
         }
 
         return apiRepository.save(api);
+    }
+
+    @Transactional
+    public Api updateMockFields(Long apiId, Long providerId, Boolean isMockResponseEnabled, String mockResponseBody, Integer mockResponseStatus) {
+        Api api = getApiForProvider(apiId, providerId);
+        if (isMockResponseEnabled != null) {
+            api.setMockResponseEnabled(isMockResponseEnabled);
+        }
+        if (mockResponseBody != null) {
+            api.setMockResponseBody(mockResponseBody);
+        }
+        if (mockResponseStatus != null) {
+            api.setMockResponseStatus(mockResponseStatus);
+        }
+        return apiRepository.save(api);
+    }
+
+    @Transactional
+    public Api duplicateAsMock(Long originalApiId, Long providerId) {
+        Api original = getApiForProvider(originalApiId, providerId);
+
+        // Check if a mock already exists for this provider and original API
+        apiRepository.findByProvider_Id(providerId).stream()
+                .filter(a -> a.isMockedApi() && originalApiId.equals(a.getOriginalApiId()))
+                .findFirst()
+                .ifPresent(a -> {
+                    throw new IllegalArgumentException("A mocked version for this API already exists in your workspace.");
+                });
+
+        String mockSlug = original.getSlug() + "-mock";
+        String mockVersion = original.getVersion() != null ? original.getVersion() : "v1";
+        String mockBasePath = "/" + mockSlug + "/" + mockVersion;
+
+        // Ensure global basePath uniqueness
+        if (apiRepository.findByBasePath(mockBasePath).isPresent()) {
+            throw new IllegalArgumentException("Cannot create mock: The endpoint path " + mockBasePath + " is already in use.");
+        }
+
+        Api mock = new Api();
+        mock.setName("[Mocked] " + original.getName());
+        mock.setDescription("Mocked version of " + original.getName() + " - " + (original.getDescription() != null ? original.getDescription() : ""));
+        mock.setSlug(mockSlug);
+        mock.setVersion(mockVersion);
+        mock.setBasePath(mockBasePath);
+        mock.setProvider(original.getProvider());
+        mock.setRateLimit(original.getRateLimit());
+        mock.setUpstreamUrl(original.getUpstreamUrl());
+        mock.setActive(true);
+        mock.setViolationThreshold(original.getViolationThreshold());
+        mock.setViolationWindowSeconds(original.getViolationWindowSeconds());
+        mock.setBlockDurationSeconds(original.getBlockDurationSeconds());
+        mock.setUsageThresholdPercent(original.getUsageThresholdPercent());
+        mock.setResetInterval(original.getResetInterval());
+
+        // Mark as mocked
+        mock.setMockedApi(true);
+        mock.setOriginalApiId(original.getId());
+
+        // Copy mock response fields if any
+        mock.setMockResponseEnabled(original.isMockResponseEnabled());
+        mock.setMockResponseBody(original.getMockResponseBody());
+        mock.setMockResponseStatus(original.getMockResponseStatus());
+
+        return apiRepository.save(mock);
+    }
+
+    @Transactional
+    public Api replaceOriginalWithMock(Long mockApiId, Long providerId) {
+        Api mock = getApiForProvider(mockApiId, providerId);
+        if (!mock.isMockedApi() || mock.getOriginalApiId() == null) {
+            throw new IllegalArgumentException("This is not a Mocked API");
+        }
+
+        Api original = getApiForProvider(mock.getOriginalApiId(), providerId);
+
+        // Overwrite original properties
+        original.setName(mock.getName().replace("[Mocked] ", ""));
+        original.setDescription(mock.getDescription());
+        original.setRateLimit(mock.getRateLimit());
+        original.setUpstreamUrl(mock.getUpstreamUrl());
+        original.setActive(mock.isActive());
+        original.setViolationThreshold(mock.getViolationThreshold());
+        original.setViolationWindowSeconds(mock.getViolationWindowSeconds());
+        original.setBlockDurationSeconds(mock.getBlockDurationSeconds());
+        original.setUsageThresholdPercent(mock.getUsageThresholdPercent());
+        original.setResetInterval(mock.getResetInterval());
+        original.setMockResponseEnabled(mock.isMockResponseEnabled());
+        original.setMockResponseBody(mock.getMockResponseBody());
+        original.setMockResponseStatus(mock.getMockResponseStatus());
+
+        apiRepository.save(original);
+
+        // Delete the mock
+        deleteApi(mock.getId(), providerId);
+
+        return original;
     }
 
     public List<Api> getProviderEntities(Long providerId) {

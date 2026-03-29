@@ -17,6 +17,10 @@ public class ProviderApiListResponse {
     private String createdAt;
     private long subscribers;
 
+    // Mock API tracking
+    private boolean isMockedApi;
+    private Long originalApiId;
+
     public ProviderApiListResponse() {}
 
     public ProviderApiListResponse(
@@ -33,7 +37,9 @@ public class ProviderApiListResponse {
             Integer usageThresholdPercent,
             String upstreamUrl,
             String createdAt,
-            long subscribers
+            long subscribers,
+            boolean isMockedApi,
+            Long originalApiId
     ) {
         this.id = id;
         this.name = name;
@@ -49,6 +55,8 @@ public class ProviderApiListResponse {
         this.upstreamUrl = upstreamUrl;
         this.createdAt = createdAt;
         this.subscribers = subscribers;
+        this.isMockedApi = isMockedApi;
+        this.originalApiId = originalApiId;
     }
 
     public Long getId() {
@@ -161,5 +169,21 @@ public class ProviderApiListResponse {
 
     public void setSubscribers(long subscribers) {
         this.subscribers = subscribers;
+    }
+
+    public boolean isMockedApi() {
+        return isMockedApi;
+    }
+
+    public void setMockedApi(boolean mockedApi) {
+        isMockedApi = mockedApi;
+    }
+
+    public Long getOriginalApiId() {
+        return originalApiId;
+    }
+
+    public void setOriginalApiId(Long originalApiId) {
+        this.originalApiId = originalApiId;
     }
 }

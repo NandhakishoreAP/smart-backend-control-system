@@ -122,13 +122,22 @@ export default function UserProfilePage() {
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Header Actions */}
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm font-semibold text-ink-600 transition hover:text-ink-900"
-        >
-          <FaArrowLeft /> Back
-        </button>
-        <h2 className="font-display text-2xl font-semibold text-ink-900">Account Settings</h2>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center justify-center h-10 w-10 rounded-full border border-fog-100 text-ink-600 transition hover:bg-fog-50"
+            title="Go Back"
+          >
+            <FaArrowLeft />
+          </button>
+          <div className="flex items-center gap-3">
+            <img src="/ape-logo.jpg" className="h-10 w-10 object-cover rounded-xl border border-fog-100 bg-white p-0.5 shadow-sm" alt="Ape Logo" />
+            <div className="flex items-baseline gap-2">
+              <h2 className="font-display text-2xl font-black text-ink-900 uppercase tracking-tighter leading-none">Ape</h2>
+              <span className="text-[10px] font-black text-ink-400 uppercase tracking-[0.2em]">Gateway Console</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && (

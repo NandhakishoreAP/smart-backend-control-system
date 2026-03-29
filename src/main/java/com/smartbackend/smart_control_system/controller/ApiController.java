@@ -135,7 +135,9 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
                     api.getUsageThresholdPercent(),
                         api.getUpstreamUrl(),
                         api.getCreatedAt(),
-                        subscriptionRepository.countByApi_Id(api.getId())
+                        subscriptionRepository.countByApi_Id(api.getId()),
+                        api.isMockedApi(),
+                        api.getOriginalApiId()
                 ))
                 .collect(Collectors.toList());
 
@@ -170,7 +172,9 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
                     api.getUsageThresholdPercent(),
                         api.getUpstreamUrl(),
                         api.getCreatedAt() == null ? null : api.getCreatedAt().toString(),
-                        subscriptionRepository.countByApi_Id(api.getId())
+                        subscriptionRepository.countByApi_Id(api.getId()),
+                        api.isMockedApi(),
+                        api.getOriginalApiId()
                 ))
                 .collect(Collectors.toList());
 
@@ -210,6 +214,12 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
                     user
             );
 
+            // Mock Fields setup directly
+            if (request.getIsMockResponseEnabled() != null) {
+                apiService.updateMockFields(api.getId(), auth.userId, request.getIsMockResponseEnabled(), request.getMockResponseBody(), request.getMockResponseStatus());
+                api = apiService.getApiForProvider(api.getId(), auth.userId);
+            }
+
             sendPublishEmail(user, api);
             // Notify provider (in-system and email)
             notificationService.createNotification(buildPublishMessage(api), NotificationType.INFO, user);
@@ -246,6 +256,9 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
             return;
         }
         notificationService.createNotification(message, NotificationType.INFO, user);
+        try {
+            emailService.sendNotificationEmail(user.getEmail(), NotificationType.INFO, message);
+        } catch (Exception e) {}
     }
 
     private String buildPublishMessage(Api api) {
@@ -446,11 +459,50 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
                     request.getUsageThresholdPercent(),
                     request.getResetInterval()
             );
+
+            // Also update Mock Fields
+            if (request.getIsMockResponseEnabled() != null || request.getMockResponseBody() != null) {
+                apiService.updateMockFields(apiId, auth.userId, request.getIsMockResponseEnabled(), request.getMockResponseBody(), request.getMockResponseStatus());
+                api = apiService.getApiForProvider(apiId, auth.userId);
+            }
+
             return ResponseEntity.ok(apiService.convertToResponse(api));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().build();
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(403).build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(404).build();
+        }
+    }
+
+    @PostMapping("/{apiId}/duplicate-mock")
+    public ResponseEntity<ApiResponse> duplicateAsMock(@PathVariable Long apiId, HttpServletRequest request) {
+        AuthContext auth = resolveAuth(request);
+        if (!auth.allowed) return ResponseEntity.status(auth.status).build();
+
+        try {
+            Api mockApi = apiService.duplicateAsMock(apiId, auth.userId);
+            notifyProvider(mockApi.getProvider(), "Mock API successfully created for " + mockApi.getName().replace("[Mocked] ", "") + ".");
+            return ResponseEntity.ok(apiService.convertToResponse(mockApi));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(404).build();
+        }
+    }
+
+    @PostMapping("/{apiId}/replace-original")
+    public ResponseEntity<ApiResponse> replaceOriginalWithMock(@PathVariable Long apiId, HttpServletRequest request) {
+        AuthContext auth = resolveAuth(request);
+        if (!auth.allowed) return ResponseEntity.status(auth.status).build();
+
+        try {
+            Api original = apiService.replaceOriginalWithMock(apiId, auth.userId);
+            notifyProvider(original.getProvider(), "Mock API replacement successful. The original API " + original.getName() + " has been overwritten with mock deployment settings.");
+            return ResponseEntity.ok(apiService.convertToResponse(original));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
         } catch (RuntimeException ex) {
             return ResponseEntity.status(404).build();
         }
@@ -484,8 +536,12 @@ public ApiResponse createApi(@RequestBody CreateApiRequest request) {
             Api api = apiService.getApiForProvider(apiId, auth.userId);
             apiService.deleteApi(apiId, auth.userId);
             // Notify provider (in-system and email)
-            notificationService.createNotification(buildDeleteMessage(api), NotificationType.INFO, api.getProvider());
-            sendDeleteEmail(api.getProvider(), api);
+            if (api.isMockedApi()) {
+                notifyProvider(api.getProvider(), "Mock API for " + api.getName().replace("[Mocked] ", "") + " has been successfully deleted.");
+            } else {
+                notificationService.createNotification(buildDeleteMessage(api), NotificationType.INFO, api.getProvider());
+                sendDeleteEmail(api.getProvider(), api);
+            }
 
             // Notify all subscribers (consumers) in-system and by email
             List<com.smartbackend.smart_control_system.entity.ApiSubscription> subscriptions = subscriptionRepository.findAll();

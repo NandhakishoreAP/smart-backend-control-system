@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { deleteProviderApiBySlug, getProviderApis, toggleProviderApi } from '../../api/api'
+import { deleteProviderApiBySlug, getProviderApis, toggleProviderApi, replaceOriginalApiWithMock } from '../../api/api'
 import { usePinnedApis } from '../../context/PinnedApiContext'
 import { FaThumbtack, FaRegStickyNote } from 'react-icons/fa'
 
@@ -10,7 +10,7 @@ function MyApis() {
   const [apis, setApis] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [actionId, setActionId] = useState(null)
+  const [actingApi, setActingApi] = useState({ id: null, type: null })
 
   const fetchApis = useCallback(async () => {
     const userId = localStorage.getItem('userId')
@@ -47,6 +47,8 @@ function MyApis() {
       version: api.version || 'v1',
       rateLimit: api.rateLimit ?? api.rpm ?? 0,
       active: api.active ?? api.enabled ?? false,
+      mockedApi: !!api.mockedApi,
+      originalApiId: api.originalApiId,
     }))
   }, [apis])
 
@@ -62,20 +64,22 @@ function MyApis() {
     const confirmDelete = window.confirm('Delete this API? This action cannot be undone.')
     if (!confirmDelete) return
     try {
-      setActionId(apiId)
+      setActingApi({ id: apiId, type: 'deleting' })
       const version = target.version || 'v1'
       await deleteProviderApiBySlug(target.slug, version)
       setApis((prev) => prev.filter((api) => api.id !== apiId))
     } catch (err) {
       setError(err?.message || 'Failed to delete API.')
     } finally {
-      setActionId(null)
+      setActingApi({ id: null, type: null })
     }
   }
 
   const handleToggle = async (apiId) => {
+    const target = apis.find(a => a.id === apiId);
+    if (!target) return;
     try {
-      setActionId(apiId)
+      setActingApi({ id: apiId, type: target.active ? 'deactivating' : 'activating' })
       await toggleProviderApi(apiId)
       setApis((prev) =>
         prev.map((api) => (api.id === apiId ? { ...api, active: !(api.active ?? api.enabled) } : api))
@@ -83,15 +87,44 @@ function MyApis() {
     } catch (err) {
       setError(err?.message || 'Failed to toggle API status.')
     } finally {
-      setActionId(null)
+      setActingApi({ id: null, type: null })
     }
   }
 
-  const renderCard = (api, isPinned) => (
+  const handleReplaceMock = async (apiId) => {
+    const confirmReplace = window.confirm('Deploy this mock? The original API will be overwritten by this mock configuration, and this duplicate will be deleted.');
+    if (!confirmReplace) return;
+
+    try {
+      setActingApi({ id: apiId, type: 'replacing' });
+      await replaceOriginalApiWithMock(apiId);
+      // Re-fetch all APIs
+      await fetchApis();
+      window.alert('Mock successfully replaced the original API.');
+    } catch (err) {
+      setError(err?.message || 'Failed to replace original API.');
+    } finally {
+      setActingApi({ id: null, type: null });
+    }
+  }
+
+  const renderCard = (api, isPinned) => {
+    const originalApi = api.mockedApi ? cards.find(c => c.id === api.originalApiId) : null;
+    return (
     <div key={api.id} className={`rounded-xl bg-white p-4 shadow ${isPinned ? 'border-2 border-yellow-200' : ''}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-ink-900">{api.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-ink-900">{api.name}</p>
+            {api.mockedApi && (
+              <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 uppercase tracking-wider">
+                Mock Duplicate
+              </span>
+            )}
+          </div>
+          {api.mockedApi && originalApi && (
+            <p className="mt-1 text-xs text-indigo-600 font-medium">Displaying as mocked api of {originalApi.name}</p>
+          )}
           <p className="mt-1 text-xs uppercase tracking-[0.2em] text-ink-500">{api.slug}</p>
           <span className="mt-2 inline-flex items-center rounded-full bg-fog-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-700">
             {api.version}
@@ -161,22 +194,61 @@ function MyApis() {
         <button
           type="button"
           onClick={() => handleDelete(api.id)}
-          disabled={actionId === api.id}
+          disabled={actingApi.id === api.id}
           className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Delete
+          {actingApi.id === api.id && actingApi.type === 'deleting' ? (
+            <span className="flex items-center gap-1">
+              <svg className="animate-spin h-3 w-3 text-red-600" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Deleting...
+            </span>
+          ) : 'Delete'}
         </button>
         <button
           type="button"
           onClick={() => handleToggle(api.id)}
-          disabled={actionId === api.id}
+          disabled={actingApi.id === api.id}
           className="rounded-lg border border-fog-200 px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-fog-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {api.active ? 'Deactivate' : 'Activate'}
+          {actingApi.id === api.id && (actingApi.type === 'activating' || actingApi.type === 'deactivating') ? (
+            <span className="flex items-center gap-1">
+              <svg className="animate-spin h-3 w-3 text-ink-600" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {actingApi.type === 'activating' ? 'Activating...' : 'Deactivating...'}
+            </span>
+          ) : (api.active ? 'Deactivate' : 'Activate')}
         </button>
+        {api.mockedApi && (
+          <button
+            type="button"
+            onClick={() => handleReplaceMock(api.id)}
+            disabled={actingApi.id === api.id}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold text-white shadow-sm transition ${
+              actingApi.id === api.id && actingApi.type === 'replacing'
+                ? 'bg-emerald-400 cursor-wait' 
+                : 'bg-emerald-600 hover:bg-emerald-700'
+            }`}
+          >
+            {actingApi.id === api.id && actingApi.type === 'replacing' ? (
+              <span className="flex items-center gap-1">
+                <svg className="animate-spin h-3 w-3 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Replacing...
+              </span>
+            ) : 'Replace Original API'}
+          </button>
+        )}
       </div>
     </div>
   )
+  }
 
   return (
     <section className="space-y-6">
@@ -211,9 +283,9 @@ function MyApis() {
       {!loading && cards.length > 0 && (
         <div className="space-y-10">
           {pinnedCards.length > 0 && (
-            <div>
-              <h3 className="mb-4 text-xl font-semibold text-ink-900 flex items-center gap-2">
-                <FaThumbtack className="text-yellow-500" /> Pinned APIs
+            <div className="rounded-2xl bg-yellow-50/50 border border-yellow-200/50 p-6">
+              <h3 className="mb-6 text-xl font-bold text-ink-900 flex items-center gap-2">
+                <FaThumbtack className="text-yellow-600 drop-shadow-sm" /> Pinned Workspace
               </h3>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {pinnedCards.map(api => renderCard(api, true))}
@@ -222,9 +294,9 @@ function MyApis() {
           )}
 
           {unpinnedCards.length > 0 && (
-            <div>
-              <h3 className="mb-4 text-xl font-semibold text-ink-900">
-                {pinnedCards.length > 0 ? 'Other APIs' : 'All APIs'}
+            <div className="px-2">
+              <h3 className="mb-6 text-xl font-bold text-ink-900 flex items-center gap-2">
+                All Published APIs
               </h3>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {unpinnedCards.map(api => renderCard(api, false))}

@@ -47,6 +47,21 @@ public class Api {
 
     private boolean active;
 
+    @Column(name = "is_mock_response_enabled")
+    private Boolean isMockResponseEnabled;
+
+    @Column(name = "mock_response_body", columnDefinition = "TEXT")
+    private String mockResponseBody;
+
+    @Column(name = "mock_response_status")
+    private Integer mockResponseStatus;
+
+    @Column(name = "is_mocked_api")
+    private Boolean isMockedApi;
+
+    @Column(name = "original_api_id")
+    private Long originalApiId;
+
     private LocalDateTime createdAt;
 
     @ManyToOne
@@ -182,6 +197,50 @@ public class Api {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    // -------- MOCK RESPONSE --------
+
+    public Boolean isMockResponseEnabled() {
+        return isMockResponseEnabled != null && isMockResponseEnabled;
+    }
+
+    public void setMockResponseEnabled(Boolean mockResponseEnabled) {
+        isMockResponseEnabled = mockResponseEnabled;
+    }
+
+    public String getMockResponseBody() {
+        return mockResponseBody;
+    }
+
+    public void setMockResponseBody(String mockResponseBody) {
+        this.mockResponseBody = mockResponseBody;
+    }
+
+    public Integer getMockResponseStatus() {
+        return mockResponseStatus;
+    }
+
+    public void setMockResponseStatus(Integer mockResponseStatus) {
+        this.mockResponseStatus = mockResponseStatus;
+    }
+
+    // -------- MOCK API DETAILS --------
+
+    public Boolean isMockedApi() {
+        return isMockedApi != null && isMockedApi;
+    }
+
+    public void setMockedApi(Boolean mockedApi) {
+        isMockedApi = mockedApi;
+    }
+
+    public Long getOriginalApiId() {
+        return originalApiId;
+    }
+
+    public void setOriginalApiId(Long originalApiId) {
+        this.originalApiId = originalApiId;
     }
 
     // -------- CREATED AT --------

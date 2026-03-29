@@ -232,10 +232,10 @@ function AppShell() {
           <div className="flex min-h-screen flex-col lg:flex-row">
             <aside className="bg-ink-900 text-fog-50 lg:w-64">
               <div className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-mint-400 to-signal-400" />
+                <img src="/ape-logo.jpg" className="h-10 w-10 object-cover rounded-xl bg-white p-0.5" alt="Ape Logo" />
                 <div>
-                  <p className="font-display text-lg font-semibold">Ape</p>
-                  <p className="text-xs text-fog-200">Gateway Console</p>
+                  <p className="font-display text-lg font-bold tracking-tight text-white leading-none mb-1">Ape</p>
+                  <p className="text-[10px] uppercase tracking-widest text-fog-400 font-black">Gateway Console</p>
                 </div>
               </div>
               <SidebarNav navItems={navItems} role={role} />

@@ -53,7 +53,7 @@ public class GatewayController {
                 : java.util.Optional.empty())
             .orElseThrow(() -> new RuntimeException("API not found"));
 
-        if (api.getUpstreamUrl() == null || api.getUpstreamUrl().isBlank()) {
+        if (!api.isMockResponseEnabled() && (api.getUpstreamUrl() == null || api.getUpstreamUrl().isBlank())) {
             throw new IllegalArgumentException("Upstream URL not configured for this API");
         }
 
@@ -104,6 +104,14 @@ public class GatewayController {
                 analyticsService.logRequest(effectiveApiKey, fullPath, method.name(), 429, 0);
                 return ResponseEntity.status(429).body("Rate limit exceeded.");
             }
+        }
+
+        if (api.isMockResponseEnabled()) {
+            long latency = 1; // Simulated latency
+            int status = api.getMockResponseStatus() != null ? api.getMockResponseStatus() : 200;
+            String mockBody = api.getMockResponseBody() != null ? api.getMockResponseBody() : "";
+            analyticsService.logRequest(effectiveApiKey, fullPath, method.name(), status, latency);
+            return ResponseEntity.status(status).header(HttpHeaders.CONTENT_TYPE, "application/json").body(mockBody);
         }
 
         HttpHeaders headers = new HttpHeaders();

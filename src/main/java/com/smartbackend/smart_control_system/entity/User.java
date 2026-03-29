@@ -31,8 +31,7 @@ public class User {
     @Column(name = "date_of_birth")
     private String dateOfBirth;
 
-    @Lob
-    @Column(name = "photo_url")
+    @Column(name = "photo_url", columnDefinition = "TEXT")
     private String photoUrl;
 
     @Column(length = 100)
