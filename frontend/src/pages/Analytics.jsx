@@ -232,7 +232,7 @@ function Analytics() {
                 {requestsOverTime.length === 0 ? (
                   <p className="text-sm text-ink-600">No request data yet.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <LineChart data={requestsOverTime} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
                       <XAxis dataKey="time" tick={{ fontSize: 12 }} stroke={chartPalette.axis} />
                       <YAxis tick={{ fontSize: 12 }} stroke={chartPalette.axis} />
@@ -250,7 +250,7 @@ function Analytics() {
                 <span className="text-xs uppercase tracking-[0.2em] text-ink-500">Success vs Errors</span>
               </div>
               <div className="mt-4 h-60">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -283,7 +283,7 @@ function Analytics() {
                 <span className="text-xs uppercase tracking-[0.2em] text-ink-500">24h totals</span>
               </div>
               <div className="mt-4 h-60">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <BarChart data={barData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke={chartPalette.axis} />
                     <YAxis tick={{ fontSize: 12 }} stroke={chartPalette.axis} />

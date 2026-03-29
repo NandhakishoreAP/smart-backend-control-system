@@ -1,9 +1,8 @@
-import UserProfileModal from '../components/UserProfileModal';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { ProviderApiProvider } from '../context/ProviderApiContext'
-import { PinnedApiProvider } from '../context/PinnedApiContext'
-import {
+import { PinnedApiProvider, usePinnedApis } from '../context/PinnedApiContext'
+import api, {
   getUnreadNotifications,
   getUserNotifications,
   markNotificationRead,
@@ -44,6 +43,30 @@ const pageTitles = {
   '/provider/create': { eyebrow: 'Publisher', title: 'Create API' },
   '/provider/analytics': { eyebrow: 'Publisher', title: 'API Analytics' },
   '/provider/health': { eyebrow: 'Publisher', title: 'Health Monitor' },
+}
+
+function SidebarNav({ navItems, role }) {
+  // Only safe to call inside PinnedApiProvider
+  // No API list in sidebar, just nav links
+  return (
+    <nav className="flex flex-col gap-2 px-4 py-6">
+      {navItems.map((item) => (
+        <NavLink
+          key={item.path}
+          to={item.path}
+          end={item.path === '/'}
+          className={({ isActive }) =>
+            `flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
+              isActive ? 'bg-white/15 text-fog-50' : 'text-fog-100 hover:bg-white/10'
+            }`
+          }
+        >
+          <span>{item.label}</span>
+          <span className="text-xs text-fog-200">{item.label === 'Alerts' ? '6' : ''}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
 }
 
 function AppShell() {
@@ -101,7 +124,7 @@ function AppShell() {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [showProfile, setShowProfile] = useState(false)
+  const [userPhoto, setUserPhoto] = useState(null)
   // Ref for dropdown to handle outside click
   const dropdownRef = useRef(null)
   // Ref for notification button to avoid closing when clicking the bell
@@ -127,6 +150,27 @@ function AppShell() {
       loadNotifications()
     }
   }, [userId])
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadPhoto = () => {
+      if (!userId) return;
+      api.get(`/api/users/${userId}`)
+        .then(res => {
+          if (isMounted && res.data?.photo) {
+            setUserPhoto(res.data.photo);
+          }
+        })
+        .catch(err => console.error('Failed to load user photo', err));
+    };
+    
+    loadPhoto();
+    window.addEventListener('profileUpdated', loadPhoto);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('profileUpdated', loadPhoto);
+    }
+  }, [userId]);
 
   const handleToggleNotifications = async () => {
     const next = !showNotifications
@@ -181,7 +225,6 @@ function AppShell() {
     }
   }
 
-
   return (
     <PinnedApiProvider>
       <ProviderApiProvider>
@@ -191,27 +234,11 @@ function AppShell() {
               <div className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-mint-400 to-signal-400" />
                 <div>
-                  <p className="font-display text-lg font-semibold">Smart Control</p>
+                  <p className="font-display text-lg font-semibold">Ape</p>
                   <p className="text-xs text-fog-200">Gateway Console</p>
                 </div>
               </div>
-              <nav className="flex flex-col gap-2 px-4 py-6">
-                {navItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === '/'}
-                    className={({ isActive }) =>
-                      `flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
-                        isActive ? 'bg-white/15 text-fog-50' : 'text-fog-100 hover:bg-white/10'
-                      }`
-                    }
-                  >
-                    <span>{item.label}</span>
-                    <span className="text-xs text-fog-200">{item.label === 'Alerts' ? '6' : ''}</span>
-                  </NavLink>
-                ))}
-              </nav>
+              <SidebarNav navItems={navItems} role={role} />
               <div className="px-6 pb-6">
                 <div className="rounded-xl bg-white/10 p-4 text-xs text-fog-100">
                   <p className="font-semibold text-fog-50">Control Plane</p>
@@ -266,16 +293,19 @@ function AppShell() {
                   {/* Profile Avatar Icon */}
                   <button
                     type="button"
-                    onClick={() => setShowProfile(true)}
+                    onClick={() => navigate(`/profile/${userId}`)}
                     className="relative flex h-11 w-11 items-center justify-center rounded-full border border-fog-100 bg-white shadow-sm transition hover:bg-fog-50 ml-2"
                     aria-label="Profile"
                   >
-                    {/* Replace with user photo if available */}
                     <span className="w-10 h-10 rounded-full bg-fog-100 flex items-center justify-center overflow-hidden">
-                      <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-ink-400">
-                        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" strokeWidth="1.5" />
-                      </svg>
+                      {userPhoto ? (
+                        <img src={userPhoto} alt="Profile" className="h-full w-full rounded-full object-cover" />
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-ink-400">
+                          <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
+                          <path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" strokeWidth="1.5" />
+                        </svg>
+                      )}
                     </span>
                   </button>
                   {/* Notifications Dropdown */}
@@ -335,15 +365,6 @@ function AppShell() {
                         </div>
                       </div>
                     </div>
-                  )}
-                  {/* Profile Modal */}
-                  {showProfile && (
-                    <UserProfileModal
-                      open={showProfile}
-                      onClose={() => setShowProfile(false)}
-                      userId={userId}
-                      role={role}
-                    />
                   )}
                 </div>
               </header>

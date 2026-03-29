@@ -3,6 +3,8 @@ package com.smartbackend.smart_control_system.controller;
 import com.smartbackend.smart_control_system.entity.Api;
 import com.smartbackend.smart_control_system.repository.ApiRepository;
 import com.smartbackend.smart_control_system.service.ApiAnalyticsService;
+import com.smartbackend.smart_control_system.service.RateLimitService;
+import com.smartbackend.smart_control_system.service.RateLimitService.RateLimitResult;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -25,11 +27,12 @@ public class GatewayController {
     private final ApiRepository apiRepository;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ApiAnalyticsService analyticsService;
+    private final RateLimitService rateLimitService;
 
-
-    public GatewayController(ApiRepository apiRepository, ApiAnalyticsService analyticsService) {
+    public GatewayController(ApiRepository apiRepository, ApiAnalyticsService analyticsService, RateLimitService rateLimitService) {
         this.apiRepository = apiRepository;
         this.analyticsService = analyticsService;
+        this.rateLimitService = rateLimitService;
     }
 
         @RequestMapping(value = "/{slug}/{version}/**", method = {
@@ -76,6 +79,33 @@ public class GatewayController {
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("Unsupported HTTP method");
         }
+        
+        String apiKey = request.getHeader("X-API-KEY");
+        String effectiveApiKey = (apiKey != null && !apiKey.isBlank()) ? apiKey : "anonymous";
+        
+        int maxRequests = api.getRateLimit();
+        if (maxRequests > 0) {
+            String rateLimitKey = effectiveApiKey + ":" + api.getId();
+            int usageThreshold = api.getUsageThresholdPercent() != null ? api.getUsageThresholdPercent() : 0;
+            int violationThreshold = api.getViolationThreshold() != null ? api.getViolationThreshold() : 0;
+            int violationWindow = api.getViolationWindowSeconds() != null ? api.getViolationWindowSeconds() : 60;
+            int blockDuration = api.getBlockDurationSeconds() != null ? api.getBlockDurationSeconds() : 0;
+
+            RateLimitResult rateResult = rateLimitService.checkAndConsume(
+                rateLimitKey, maxRequests, usageThreshold, violationThreshold, violationWindow, blockDuration
+            );
+
+            if (rateResult.isBlocked() || rateResult.isNewlyBlocked()) {
+                analyticsService.logRequest(effectiveApiKey, fullPath, method.name(), 403, 0);
+                return ResponseEntity.status(403).body("API Key is blocked from accessing this API.");
+            }
+
+            if (!rateResult.isAllowed()) {
+                analyticsService.logRequest(effectiveApiKey, fullPath, method.name(), 429, 0);
+                return ResponseEntity.status(429).body("Rate limit exceeded.");
+            }
+        }
+
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.CONTENT_TYPE, request.getContentType() == null
                 ? "application/json"
@@ -89,10 +119,9 @@ public class GatewayController {
             ResponseEntity<Object> response = restTemplate.exchange(targetUrl, method, entity, Object.class);
             long latency = System.currentTimeMillis() - start;
             // Log successful request
-            String apiKey = request.getHeader("X-API-KEY");
             analyticsService.logRequest(
-                apiKey != null ? apiKey : "anonymous",
-                endpoint,
+                effectiveApiKey,
+                fullPath,
                 method.name(),
                 response.getStatusCodeValue(),
                 latency
@@ -101,10 +130,9 @@ public class GatewayController {
         } catch (HttpStatusCodeException ex) {
             long latency = System.currentTimeMillis() - start;
             // Log failed request
-            String apiKey = request.getHeader("X-API-KEY");
             analyticsService.logRequest(
-                apiKey != null ? apiKey : "anonymous",
-                endpoint,
+                effectiveApiKey,
+                fullPath,
                 method.name(),
                 ex.getStatusCode().value(),
                 latency

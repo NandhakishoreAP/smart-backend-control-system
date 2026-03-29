@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { deleteProviderApiBySlug, getProviderApis, toggleProviderApi } from '../../api/api'
+import { usePinnedApis } from '../../context/PinnedApiContext'
+import { FaThumbtack, FaRegStickyNote } from 'react-icons/fa'
 
 function MyApis() {
   const navigate = useNavigate()
+  const { pinnedApis, notes, pinApi, unpinApi } = usePinnedApis()
   const [apis, setApis] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -47,6 +50,9 @@ function MyApis() {
     }))
   }, [apis])
 
+  const pinnedCards = useMemo(() => cards.filter(api => pinnedApis.includes(api.id)), [cards, pinnedApis]);
+  const unpinnedCards = useMemo(() => cards.filter(api => !pinnedApis.includes(api.id)), [cards, pinnedApis]);
+
   const handleDelete = async (apiId) => {
     const target = apis.find((api) => api.id === apiId)
     if (!target) {
@@ -81,6 +87,97 @@ function MyApis() {
     }
   }
 
+  const renderCard = (api, isPinned) => (
+    <div key={api.id} className={`rounded-xl bg-white p-4 shadow ${isPinned ? 'border-2 border-yellow-200' : ''}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="font-semibold text-ink-900">{api.name}</p>
+          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-ink-500">{api.slug}</p>
+          <span className="mt-2 inline-flex items-center rounded-full bg-fog-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-700">
+            {api.version}
+          </span>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <span
+            className={`rounded-full px-2 py-1 text-xs font-semibold ${
+              api.active ? 'bg-emerald-100 text-emerald-700' : 'bg-fog-100 text-ink-600'
+            }`}
+          >
+            {api.active ? 'Active' : 'Inactive'}
+          </span>
+          {isPinned ? (
+            <button onClick={() => unpinApi(api.id)} className="rounded-full bg-yellow-100 px-2 py-1 text-yellow-700 text-xs font-bold flex items-center gap-1 hover:bg-yellow-200 transition">
+              <FaThumbtack /> Pinned
+            </button>
+          ) : (
+            <button onClick={() => pinApi(api.id)} className="rounded-full bg-fog-100 px-2 py-1 text-ink-500 text-xs font-semibold flex items-center gap-1 hover:bg-fog-200 transition">
+              <FaThumbtack /> Pin
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="mt-3 text-sm text-ink-600">{api.description}</p>
+      <div className="mt-4 text-xs text-ink-600">Rate limit: {api.rateLimit} rpm</div>
+
+      {isPinned && notes[api.id] && (
+        <div className="mt-4 rounded-lg bg-yellow-50 border border-yellow-100 p-3 text-xs">
+          <div className="flex items-center gap-1 font-semibold text-yellow-800 mb-2">
+            <FaRegStickyNote /> Pinned Notes
+          </div>
+          <div className="space-y-2 text-yellow-900 max-h-32 overflow-y-auto">
+            {Array.isArray(notes[api.id])
+              ? notes[api.id].map((n, i) =>
+                  typeof n === 'string' ? (
+                    <div key={i} className="border-l-2 border-yellow-300 pl-2">{n}</div>
+                  ) : n && typeof n === 'object' && n.text ? (
+                    <div key={i} className="border-l-2 border-yellow-300 pl-2">
+                      <p>{n.text}</p>
+                      <p className="text-yellow-600/70 text-[10px] mt-0.5 font-medium">
+                        {n.date ? new Date(n.date).toLocaleString() : ''}
+                      </p>
+                    </div>
+                  ) : null
+                )
+              : <div className="border-l-2 border-yellow-300 pl-2">{notes[api.id]}</div>}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => navigate(`/provider/apis/edit/${api.id}`)}
+          className="rounded-lg border border-fog-200 px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-fog-50"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(`/provider/create?cloneFrom=${api.id}`)}
+          className="rounded-lg border border-fog-200 px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-fog-50"
+        >
+          New version
+        </button>
+        <button
+          type="button"
+          onClick={() => handleDelete(api.id)}
+          disabled={actionId === api.id}
+          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Delete
+        </button>
+        <button
+          type="button"
+          onClick={() => handleToggle(api.id)}
+          disabled={actionId === api.id}
+          className="rounded-lg border border-fog-200 px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-fog-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {api.active ? 'Deactivate' : 'Activate'}
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <section className="space-y-6">
       <div className="min-h-[140px] rounded-xl bg-white p-6 shadow transition hover:shadow-md">
@@ -104,7 +201,7 @@ function MyApis() {
           <button
             type="button"
             onClick={() => navigate('/provider/create')}
-            className="mt-4 inline-flex items-center rounded-lg bg-ink-900 px-4 py-2 text-xs font-semibold text-fog-50"
+            className="mt-4 inline-flex items-center rounded-lg bg-ink-900 px-4 py-2 text-xs font-semibold text-fog-50 hover:bg-ink-800"
           >
             Create API
           </button>
@@ -112,61 +209,28 @@ function MyApis() {
       )}
 
       {!loading && cards.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {cards.map((api) => (
-            <div key={api.id} className="rounded-xl bg-white p-4 shadow">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-ink-900">{api.name}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-ink-500">{api.slug}</p>
-                  <span className="mt-2 inline-flex items-center rounded-full bg-fog-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-700">
-                    {api.version}
-                  </span>
-                </div>
-                <span
-                  className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                    api.active ? 'bg-emerald-100 text-emerald-700' : 'bg-fog-100 text-ink-600'
-                  }`}
-                >
-                  {api.active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-              <p className="mt-3 text-sm text-ink-600">{api.description}</p>
-              <div className="mt-4 text-xs text-ink-600">Rate limit: {api.rateLimit} rpm</div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/provider/apis/edit/${api.id}`)}
-                  className="rounded-lg border border-fog-200 px-3 py-2 text-xs font-semibold text-ink-700"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/provider/create?cloneFrom=${api.id}`)}
-                  className="rounded-lg border border-fog-200 px-3 py-2 text-xs font-semibold text-ink-700"
-                >
-                  New version
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(api.id)}
-                  disabled={actionId === api.id}
-                  className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Delete
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggle(api.id)}
-                  disabled={actionId === api.id}
-                  className="rounded-lg border border-fog-200 px-3 py-2 text-xs font-semibold text-ink-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {api.active ? 'Deactivate' : 'Activate'}
-                </button>
+        <div className="space-y-10">
+          {pinnedCards.length > 0 && (
+            <div>
+              <h3 className="mb-4 text-xl font-semibold text-ink-900 flex items-center gap-2">
+                <FaThumbtack className="text-yellow-500" /> Pinned APIs
+              </h3>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {pinnedCards.map(api => renderCard(api, true))}
               </div>
             </div>
-          ))}
+          )}
+
+          {unpinnedCards.length > 0 && (
+            <div>
+              <h3 className="mb-4 text-xl font-semibold text-ink-900">
+                {pinnedCards.length > 0 ? 'Other APIs' : 'All APIs'}
+              </h3>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {unpinnedCards.map(api => renderCard(api, false))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>

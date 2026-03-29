@@ -173,8 +173,8 @@ function ProviderAnalytics() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="rounded-xl bg-white p-4 shadow">
               <p className="text-sm font-semibold text-ink-900">Requests per API</p>
-              <div className="mt-4 h-64">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="mt-4 h-64" style={{ minWidth: 300, minHeight: 200 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={200}>
                   <BarChart data={chartData} margin={{ top: 10, right: 16, left: -8, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -187,8 +187,8 @@ function ProviderAnalytics() {
             </div>
             <div className="rounded-xl bg-white p-4 shadow">
               <p className="text-sm font-semibold text-ink-900">Avg Latency per API</p>
-              <div className="mt-4 h-64">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="mt-4 h-64" style={{ minWidth: 300, minHeight: 200 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={200}>
                   <LineChart data={chartData} margin={{ top: 10, right: 16, left: -8, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />

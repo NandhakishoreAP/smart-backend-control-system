@@ -32,6 +32,7 @@ function Dashboard() {
   const [subscriptions, setSubscriptions] = useState([])
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(false)
   const [subscriptionsError, setSubscriptionsError] = useState('')
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     let isMounted = true
@@ -79,7 +80,7 @@ function Dashboard() {
       isMounted = false
       window.clearInterval(intervalId)
     }
-  }, [])
+  }, [refreshTrigger])
 
 
   useEffect(() => {
@@ -113,11 +114,13 @@ function Dashboard() {
     }
 
     fetchSubscriptions()
+    const intervalId = window.setInterval(fetchSubscriptions, 10000)
 
     return () => {
       isMounted = false
+      window.clearInterval(intervalId)
     }
-  }, [])
+  }, [refreshTrigger])
 
   useEffect(() => {
     let isMounted = true
@@ -128,6 +131,14 @@ function Dashboard() {
         if (isMounted) {
           setSavedKeys(data || [])
           setSavedKeysError('')
+
+          // If no apiKey is saved globally, use the first key
+          if (!localStorage.getItem('apiKey') && data && data.length > 0) {
+            const firstKey = data[0].apiKey;
+            localStorage.setItem('apiKey', firstKey);
+            setApiKey(firstKey);
+            window.dispatchEvent(new Event('apiKeyUpdated'));
+          }
         }
       } catch (err) {
         if (isMounted) {
@@ -192,6 +203,7 @@ function Dashboard() {
       ].slice(0, 5))
     } finally {
       setGatewayLoading(false)
+      setRefreshTrigger((prev) => prev + 1)
     }
   }
 

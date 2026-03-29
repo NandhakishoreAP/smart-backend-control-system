@@ -35,19 +35,7 @@ function ProviderDashboard() {
   const { apis: allApis, setApis, fetchApis } = useProviderApis();
   // Filter out 'Test' API by name (case-insensitive)
   const apis = allApis.filter(api => api.name?.toLowerCase() !== 'test');
-  const { pinnedApis, setPinnedApis } = usePinnedApis();
-  const [notes, setNotes] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('apiNotes') || '{}');
-    } catch {
-      return {};
-    }
-  });
-
-  // Persist notes to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('apiNotes', JSON.stringify(notes));
-  }, [notes]);
+  const { pinnedApis, pinApi, unpinApi, notes, addNote, updateNote, notification } = usePinnedApis();
   const [search, setSearch] = useState('')
   const [noteInput, setNoteInput] = useState({}) // { [apiId]: '' }
   const [showNotesFor, setShowNotesFor] = useState(null)
@@ -105,28 +93,17 @@ function ProviderDashboard() {
 
   // Pin/unpin handlers
   const handlePinApi = (apiId) => {
-    setPinnedApis((prev) => {
-      if (prev.includes(apiId)) return prev;
-      showToast(`Pinned API`);
-      return [...prev, apiId];
-    });
+    pinApi(apiId);
   };
   const handleUnpinApi = (apiId) => {
-    setPinnedApis((prev) => {
-      if (!prev.includes(apiId)) return prev;
-      showToast(`Unpinned API`);
-      return prev.filter((id) => id !== apiId);
-    });
+    unpinApi(apiId);
   };
   // Notes handlers
   const handleAddNote = (apiId) => {
-    const text = noteInput[apiId]?.trim()
-    if (!text) return
-    setNotes(prev => ({
-      ...prev,
-      [apiId]: [...(prev[apiId] || []), { text, date: new Date() }]
-    }))
-    setNoteInput(prev => ({ ...prev, [apiId]: '' }))
+    const text = noteInput[apiId]?.trim();
+    if (!text) return;
+    addNote(apiId, text);
+    setNoteInput(prev => ({ ...prev, [apiId]: '' }));
   }
   // Mock editor handlers
   // --- Persistent Mock State Logic ---
@@ -317,12 +294,21 @@ function ProviderDashboard() {
                         <button className="rounded bg-blue-500 px-2 py-1 text-white text-xs flex items-center gap-1" onClick={() => setShowNotesFor(api.id)}><FaRegStickyNote />Notes</button>
                         {showNotesFor === api.id && (
                           <div className="absolute z-10 bg-white border rounded shadow p-3 mt-2">
-                            <div className="font-semibold mb-1">Notes for {api.name}</div>
-                            <ul className="text-xs mb-2 max-h-32 overflow-y-auto">
-                              {(notes[api.id] || []).map((n, i) => (
-                                <li key={i}>{n.text} <span className="text-ink-400">({new Date(n.date).toLocaleString()})</span></li>
-                              ))}
-                            </ul>
+                            <div className="font-semibold mb-1">Note for {api.name}</div>
+                            <div className="text-xs mb-2 max-h-32 overflow-y-auto">
+                              {notes[api.id]
+                                ? (Array.isArray(notes[api.id])
+                                    ? notes[api.id].map((n, i) => typeof n === 'string'
+                                        ? <div key={i}>{n}</div>
+                                        : n && typeof n === 'object' && n.text
+                                            ? <div key={i}>{n.text} <span className="text-ink-400">({n.date ? new Date(n.date).toLocaleString() : ''})</span></div>
+                                            : null
+                                      )
+                                    : <div>{notes[api.id]}</div>
+                                  )
+                                : <div className="text-ink-400">No note yet.</div>
+                              }
+                            </div>
                             <div className="flex gap-1">
                               <input
                                 className="border rounded px-2 py-1 text-xs flex-1"
@@ -352,11 +338,20 @@ function ProviderDashboard() {
                     {showNotesFor === api.id && (
                       <div className="absolute z-10 bg-white border rounded shadow p-3 mt-2">
                         <div className="font-semibold mb-1">Notes for {api.name}</div>
-                        <ul className="text-xs mb-2 max-h-32 overflow-y-auto">
-                          {(notes[api.id] || []).map((n, i) => (
-                            <li key={i}>{n.text} <span className="text-ink-400">({new Date(n.date).toLocaleString()})</span></li>
-                          ))}
-                        </ul>
+                        <div className="text-xs mb-2 max-h-32 overflow-y-auto">
+                          {notes[api.id]
+                            ? (Array.isArray(notes[api.id])
+                                ? notes[api.id].map((n, i) => typeof n === 'string'
+                                    ? <div key={i}>{n}</div>
+                                    : n && typeof n === 'object' && n.text
+                                        ? <div key={i}>{n.text} <span className="text-ink-400">({n.date ? new Date(n.date).toLocaleString() : ''})</span></div>
+                                        : null
+                                  )
+                                : <div>{notes[api.id]}</div>
+                              )
+                            : <div className="text-ink-400">No note yet.</div>
+                          }
+                        </div>
                         <div className="flex gap-1">
                           <input
                             className="border rounded px-2 py-1 text-xs flex-1"
@@ -376,30 +371,13 @@ function ProviderDashboard() {
             </div>
           </section>
 
-          {/* Collaboration & Notes */}
-          <section className="rounded-xl bg-white p-6 shadow">
-            <h2 className="font-display text-xl font-semibold text-ink-900 mb-4">Collaboration & Notes</h2>
-            <div className="mb-2 text-sm text-ink-700">Add notes and collaborate with your team.</div>
-            <div className="flex gap-2 mb-2">
-              <input
-                className="border rounded px-3 py-2 text-sm flex-1"
-                placeholder="Add a note..."
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && e.target.value) {
-                    setNotes((prev) => [...prev, { text: e.target.value, date: new Date() }])
-                    e.target.value = ''
-                  }
-                }}
-              />
+          {/* Collaboration & Notes section removed for unified notes */}
+          {/* In-system notification for pin/unpin */}
+          {notification && (
+            <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg text-white ${notification.type === 'pin' ? 'bg-emerald-600' : 'bg-gray-600'}`}>
+              API {notification.apiId} {notification.type === 'pin' ? 'pinned' : 'unpinned'}
             </div>
-            <ul className="text-sm text-ink-700 list-disc list-inside">
-              {Array.isArray(notes)
-                ? notes.map((n, i) => (
-                    <li key={i}>{n.text} <span className="text-ink-400">({new Date(n.date).toLocaleString()})</span></li>
-                  ))
-                : null}
-            </ul>
-          </section>
+          )}
         </div>
 
         {/* Right column: Subscriber Insights, Mocking */}

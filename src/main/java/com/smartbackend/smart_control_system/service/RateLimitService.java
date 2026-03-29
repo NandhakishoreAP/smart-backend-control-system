@@ -32,7 +32,9 @@ public class RateLimitService {
                 return RateLimitResult.blocked(blockUntil, false);
             }
             blockedUntil.remove(key);
-            return RateLimitResult.unblocked();
+            requestCounts.remove(key);
+            violationCounts.remove(key);
+            thresholdNotifiedAt.remove(key);
         }
 
         requestWindowStart.putIfAbsent(key, now);

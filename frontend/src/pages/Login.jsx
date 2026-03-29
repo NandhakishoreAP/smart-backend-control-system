@@ -128,7 +128,7 @@ function Login() {
         <div className="mb-6 text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-ink-600">Welcome back</p>
           <h1 className="mt-2 font-display text-3xl font-semibold text-ink-900">Sign in</h1>
-          <p className="mt-2 text-sm text-ink-600">Access the Smart Control gateway console.</p>
+          <p className="mt-2 text-sm text-ink-600">Access the Ape gateway console.</p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
